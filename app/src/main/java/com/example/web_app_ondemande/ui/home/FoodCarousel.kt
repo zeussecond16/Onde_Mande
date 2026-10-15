@@ -18,9 +18,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -33,16 +33,16 @@ import kotlinx.coroutines.delay
 import kotlin.math.absoluteValue
 
 /**
- * Komponen Carousel Makanan Bergulir 3D di Halaman Utama.
+ * Komponen Carousel Makanan Bergulir 3D Halus di Halaman Utama.
  *
  * Fitur Compose:
- * - HorizontalPager + rememberPagerState untuk membuat halaman yang bisa di-swipe secara horizontal.
- * - Modifier.graphicsLayer: Mengubah rotasi Y, skala, dan transparansi (alpha) kartu makanan secara dinamis
- *   berdasarkan jarak halaman dari pusat aktif, memberikan efek 3D melengkung pengganti CSS 3D Carousel.
- * - LaunchedEffect(Unit) untuk mengaktifkan pemutaran otomatis (auto-scroll) setiap 2.8 detik.
+ * - HorizontalPager + rememberPagerState: Membuat galeri bergulir horizontal dengan pageSpacing 12.dp.
+ * - Modifier.graphicsLayer dengan cameraDistance = 8 * density: Mengatur efek rotasi Y halus (maksimal 12 derajat),
+ *   skala, dan transparansi (alpha) tanpa adanya potongan kasar atau distorsi miring berlebihan.
+ * - LaunchedEffect: Menjalankan pemutaran otomatis (auto-scroll) setiap 2.8 detik.
  *
  * Bagian Tampilan:
- * - Menampilkan 6 foto makanan unggulan yang berputar halus di halaman Home.
+ * - Menampilkan foto makanan unggulan yang berputar mulus dan rapi di halaman Home.
  */
 @Composable
 fun FoodCarousel(
@@ -54,6 +54,8 @@ fun FoodCarousel(
         initialPage = 0,
         pageCount = { items.size }
     )
+
+    val density = LocalDensity.current.density
 
     // Auto-scroll pelan setiap 2800 ms
     LaunchedEffect(pagerState) {
@@ -69,49 +71,54 @@ fun FoodCarousel(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(280.dp),
+            .height(290.dp),
         contentAlignment = Alignment.Center
     ) {
         HorizontalPager(
             state = pagerState,
-            contentPadding = PaddingValues(horizontal = 110.dp),
+            contentPadding = PaddingValues(horizontal = 60.dp),
+            pageSpacing = 12.dp,
             modifier = Modifier.fillMaxWidth()
         ) { page ->
             val pageOffset = (
                 (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
-            ).absoluteValue
-
+            )
+            val absOffset = pageOffset.absoluteValue
             val menuItem = items[page]
 
             Card(
                 modifier = Modifier
-                    .width(150.dp)
-                    .height(210.dp)
+                    .width(220.dp)
+                    .height(260.dp)
                     .graphicsLayer {
-                        // Efek 3D: Skala, Alpha, dan Rotasi berdasarkan jarak dari pusat
+                        // Skala halus dari 0.88f ke 1.0f
                         val scale = lerp(
-                            start = 0.85f,
+                            start = 0.88f,
                             stop = 1f,
-                            fraction = 1f - pageOffset.coerceIn(0f, 1f)
+                            fraction = 1f - absOffset.coerceIn(0f, 1f)
                         )
                         scaleX = scale
                         scaleY = scale
 
+                        // Transparansi dari 0.65f ke 1.0f
                         alpha = lerp(
-                            start = 0.5f,
+                            start = 0.65f,
                             stop = 1f,
-                            fraction = 1f - pageOffset.coerceIn(0f, 1f)
+                            fraction = 1f - absOffset.coerceIn(0f, 1f)
                         )
 
-                        // Rotasi Y melengkung mirip efek 3D CSS
+                        // Rotasi Y halus (maksimal -12 derajat sampai 12 derajat)
                         rotationY = lerp(
-                            start = -25f,
-                            stop = 25f,
-                            fraction = (pagerState.currentPage - page + pagerState.currentPageOffsetFraction).coerceIn(-1f, 1f)
+                            start = -12f,
+                            stop = 12f,
+                            fraction = pageOffset.coerceIn(-1f, 1f)
                         )
+
+                        // Mencegah kliping/terpotong kasar dengan jarak kamera berpresisi
+                        cameraDistance = 8 * density
                     }
                     .clickable { onItemClick(menuItem) },
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = OndeMandeCardImageBg),
                 elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
             ) {
@@ -121,7 +128,7 @@ fun FoodCarousel(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxSize()
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(24.dp))
                 )
             }
         }

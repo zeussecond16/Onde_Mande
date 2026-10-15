@@ -26,20 +26,19 @@ import androidx.compose.ui.unit.dp
 import com.example.web_app_ondemande.data.MenuData
 import com.example.web_app_ondemande.data.MenuItem
 import com.example.web_app_ondemande.ui.theme.OndeMandeCardImageBg
-import com.example.web_app_ondemande.ui.theme.OndeMandeMuted
 import com.example.web_app_ondemande.ui.theme.OndeMandeTheme
 
 /**
  * Kartu komponen untuk menampilkan setiap item masakan di daftar Menu.
  *
  * Fitur Compose:
- * - Card & CardDefaults untuk elevate permukaan kartu dengan bayangan lembut.
- * - Row & Column untuk mengatur tata letak horizontal gambar, info, dan stepper.
- * - Image dengan ContentScale.Crop agar foto masakan terisi presisi di kotak 84.dp.
- * - Modifier.weight(1f) pada kolom info agar nama dan harga fleksibel mengambil sisa ruang.
+ * - Card & CardDefaults untuk permukaan kartu dengan elevasi lembut.
+ * - Row & Column terstruktur rapi agar gambar, info, dan stepper berjarak proporsional.
+ * - ContentScale.Crop pada gambar makanan agar terisi presisi di kotak 90.dp.
+ * - Modifier.weight(1f) pada kolom info agar nama dan harga mengambil sisa ruang dengan fleksibel.
  *
  * Bagian Tampilan:
- * - Menampilkan foto makanan, nama masakan Minang, harga Rupiah, dan tombol Stepper kuantitas.
+ * - Menampilkan foto makanan, nama masakan Minang, harga Rupiah, dan tombol Stepper kuantitas yang responsif.
  */
 @Composable
 fun MenuItemCard(
@@ -58,9 +57,9 @@ fun MenuItemCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(10.dp),
+                .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Foto Makanan
             Image(
@@ -68,7 +67,7 @@ fun MenuItemCard(
                 contentDescription = item.name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .size(84.dp)
+                    .size(90.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(OndeMandeCardImageBg)
             )
@@ -81,12 +80,13 @@ fun MenuItemCard(
                 Text(
                     text = item.name,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = MenuData.formatRupiah(item.price),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = OndeMandeMuted
+                    color = MaterialTheme.colorScheme.secondary
                 )
             }
 
@@ -102,12 +102,27 @@ fun MenuItemCard(
 
 @Preview(showBackground = true)
 @Composable
-fun MenuItemCardPreview() {
+fun MenuItemCardPreviewZero() {
     OndeMandeTheme {
         Column(modifier = Modifier.padding(16.dp)) {
             MenuItemCard(
                 item = MenuData.items[0],
-                quantity = 1,
+                quantity = 0,
+                onIncrease = {},
+                onDecrease = {}
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun MenuItemCardPreviewActive() {
+    OndeMandeTheme {
+        Column(modifier = Modifier.padding(16.dp)) {
+            MenuItemCard(
+                item = MenuData.items[0],
+                quantity = 2,
                 onIncrease = {},
                 onDecrease = {}
             )
