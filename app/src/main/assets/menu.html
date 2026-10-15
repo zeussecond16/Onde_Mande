@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Menu - Onde Mande</title>
+    <link rel="stylesheet" href="home.css" />  <!-- variabel warna & navbar dari home -->
+    <link rel="stylesheet" href="menu.css" />
+</head>
+<body class="menu-page">
+
+<!-- NAVBAR -->
+<header class="nav">
+    <a href="home.html" class="back-btn" aria-label="Kembali">‹</a>
+    <span class="logo">Onde Mande</span>
+</header>
+
+<!-- JUDUL -->
+<section class="intro">
+    <h1>
+        <span class="serif">Pilih Hidangan,</span>
+        <span class="bold">Langsuang Dari Dapua Kami</span>
+    </h1>
+</section>
+
+<!-- DAFTAR MENU (diisi otomatis oleh menu.js) -->
+<main class="list" id="menuList"></main>
+
+<!-- BAR TOTAL (muncul kalau ada pesanan) -->
+<div class="cartbar" id="cartBar">
+    <div class="cart-info">
+        <span id="cartCount">0 item</span>
+        <strong id="cartTotal">Rp 0</strong>
+    </div>
+    <button class="cart-btn" id="orderBtn">Pesan <i class="arrow">›</i></button>
+</div>
+
+<script src="menu.js"></script>
+</body>
+</html>
