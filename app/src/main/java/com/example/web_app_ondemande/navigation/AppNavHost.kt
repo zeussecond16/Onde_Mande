@@ -29,7 +29,7 @@ sealed class Screen(val route: String) {
  * Fitur Compose:
  * - NavHost & composable() untuk berpindah layar secara deklaratif.
  * - State Hoisting: cartState dideklarasikan sekali di tingkat paling atas dan dikirim ke setiap layar
- *   sebagai data pembacaan dan fungsi callback lambda (onIncrease, onDecrease, onClearCart).
+ *   sebagai data pembacaan dan fungsi callback lambda (onIncrease, onDecrease, onConfirmOrder).
  * - rememberSaveable dengan custom Saver agar data keranjang tidak hilang saat rotasi layar HP.
  *
  * Bagian Tampilan:
@@ -115,8 +115,9 @@ fun AppNavHost(
                         cartState.remove(id)
                     }
                 },
-                onClearCart = {
+                onConfirmOrder = {
                     cartState.clear()
+                    navController.popBackStack(Screen.Home.route, inclusive = false)
                 },
                 onBackToMenu = {
                     navController.popBackStack()

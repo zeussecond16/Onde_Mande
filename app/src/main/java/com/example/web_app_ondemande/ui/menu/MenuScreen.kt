@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -40,12 +42,12 @@ import com.example.web_app_ondemande.ui.theme.OndeMandeTheme
  *
  * Fitur Compose:
  * - Scaffold untuk mengelola struktur halaman dan penempatan CartBar di bottomBar.
- * - LazyColumn + items(key = { it.id }) untuk merender daftar makanan secara efisien dengan performa tinggi.
+ * - LazyColumn + items(key = { it.id }) untuk merender daftar makanan secara efisien.
+ * - BadgedBox & Badge pada header top bar untuk memperlihatkan jumlah item keranjang secara langsung.
  * - derivedStateOf untuk menghitung total item dan total harga keranjang secara reaktif.
- * - Header kustom dengan tombol kembali '‹' dan judul bergaya Serif.
  *
  * Bagian Tampilan:
- * - Menampilkan daftar 10 hidangan Minang beserta stepper kuantitas dan bar keranjang melayang di bawah.
+ * - Menampilkan daftar 10 hidangan Minang beserta stepper kuantitas, ikon badge keranjang di header, dan bar keranjang melayang.
  */
 @Composable
 fun MenuScreen(
@@ -117,8 +119,37 @@ fun MenuScreen(
                     fontWeight = FontWeight.Bold
                 )
 
-                // Penyeimbang layout
-                Box(modifier = Modifier.size(40.dp))
+                // Ikon Keranjang + Badge Jumlah Item
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color.White)
+                        .clickable { onNavigateToCart() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    BadgedBox(
+                        badge = {
+                            if (totalItems > 0) {
+                                Badge(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                ) {
+                                    Text(
+                                        text = totalItems.toString(),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    ) {
+                        Text(
+                            text = "🛒",
+                            fontSize = 18.sp
+                        )
+                    }
+                }
             }
 
             // Judul Halaman Menu

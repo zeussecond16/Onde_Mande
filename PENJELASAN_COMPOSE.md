@@ -9,24 +9,25 @@ Dokumen ini disusun untuk membantu menjelaskan arsitektur dan penggunaan fitur *
 | Komponen / Fitur Compose | File & Fungsi | Efeknya Pada Tampilan | Cara Menjelaskannya Singkat |
 | :--- | :--- | :--- | :--- |
 | **`Scaffold` & `containerColor`** | `HomeScreen.kt`, `MenuScreen.kt`, `CartScreen.kt` | Menyediakan tata letak standar aplikasi (TopBar, BottomBar, & warna latar belakang Krem `#FDF8EC`). | *"Scaffold memberi wadah dasar halaman dan otomatis menangani area inset status bar/navigation bar."* |
+| **`SingleChoiceSegmentedButtonRow`** | `CartScreen.kt` (`SingleChoiceSegmentedButtonRow`) | Menampilkan dua tombol pilihan opsi pengambilan ("Ambil di tempat" & "Antar") bergaya Material 3. | *"SingleChoiceSegmentedButtonRow menyediakan pemilih opsi segmen yang rapi dan responsif."* |
+| **`OutlinedTextField` + `rememberSaveable`** | `CartScreen.kt` (`OutlinedTextField`) | Menginput catatan untuk dapur dengan sudut membulat 16.dp, serta `imePadding()` agar input tidak tertutup keyboard. | *"OutlinedTextField menyimpan teks catatan dapur secara aman sehingga teks tidak hilang saat layar diputar."* |
+| **`Modifier.animateItem()`** | `CartScreen.kt` (`items(...)`) | Memberikan animasi penghapusan dan pergeseran yang mulus saat porsi item keranjang berkurang ke 0. | *"Modifier.animateItem() membuat baris yang dihapus menghilang dengan animasi, dan baris lain bergeser mulus."* |
+| **`AnimatedContent` / `animateIntAsState`** | `OrderSummaryCard.kt`, `QuantityStepper.kt` | Menganimasikan angka kuantitas dan total pembayaran secara vertikal saat nilainya berubah. | *"AnimatedContent memberikan transisi geser vertikal angka yang halus sehingga pergantian harga terasa hidup."* |
+| **`AlertDialog`** | `CartScreen.kt` (`AlertDialog`) | Menampilkan dialog pop-up konfirmasi ringkasan pesanan setelah tombol "Pesan Sekarang" diklik. | *"AlertDialog menampilkan rincian pesanan dan catatan sebagai pemicu simulasi pemesanan tanpa backend."* |
+| **`Scaffold bottomBar` + `navigationBarsPadding`** | `CartScreen.kt` (`bottomBar`) | Menempatkan tombol pil hitam "Pesan Sekarang" di bagian bawah layar secara presisi di atas navigation bar sistem. | *"bottomBar menempatkan tombol aksi utama di area bawah layar dengan padding aman terhadap navigation bar HP."* |
+| **`State Hoisting` Keranjang Lintas Halaman** | `AppNavHost.kt` (`cartState`) | Dideklarasikan di NavHost dan dikirim ke MenuScreen & CartScreen agar data keranjang selalu sinkron di seluruh halaman. | *"State Hoisting memastikan bahwa perubahan porsi di Keranjang langsung tercermin secara real-time di Menu, dan sebaliknya."* |
 | **`HorizontalPager` & `pageSpacing`** | `FoodCarousel.kt` (`FoodCarousel()`) | Memungkinkan slide/swipe foto makanan secara horizontal di halaman utama dengan jarak halaman rapi (`12.dp`). | *"HorizontalPager membuat galeri foto dapat di-swipe dengan animasi transisi antarhalaman yang presisi."* |
 | **`Modifier.graphicsLayer` & `cameraDistance`** | `FoodCarousel.kt` (`graphicsLayer { ... }`) | Mengatur rotasi Y halus (-12° s/d 12°), skala, alpha, dan perspektif kamera 3D tanpa kliping kasar. | *"graphicsLayer mengubah rotasi dan skala kartu berdasarkan jarak dari halaman tengah, dengan cameraDistance untuk mencegah potongan kasar pada tepi layar."* |
-| **`AnimatedContent`** | `QuantityStepper.kt` (`AnimatedContent`) | Mengganti tampilan tombol tunggal '+' menjadi stepper lengkap [- angka +] dan menganimasikan perubahan angka kuantitas secara vertikal. | *"AnimatedContent memberikan transisi animasi geser vertikal dan fade yang halus saat angka porsi bertambah atau berkurang."* |
-| **`Modifier.animateContentSize()`** | `QuantityStepper.kt` (`animateContentSize()`) | Melebar dan menyempitkan ukuran container stepper secara otomatis saat kuantitas berubah dari 0 ke >= 1. | *"animateContentSize mengubah ukuran lebar tombol stepper secara mulus saat tombol berubah bentuk."* |
 | **`LazyColumn` & `items(key = ...)`** | `MenuScreen.kt`, `CartScreen.kt` | Merender daftar menu makanan secara efisien hanya untuk item yang terlihat di layar. | *"LazyColumn adalah versi Compose dari RecyclerView. Parameter `key` memastikan Compose tidak merender ulang item yang tidak berubah saat scroll."* |
-| **`Card` & `CardDefaults.cardElevation`** | `MenuItemCard.kt`, `CartBar.kt` | Menampilkan wadah kartu makanan dengan sudut melengkung `22.dp` dan bayangan elevasi. | *"Card memberi bentuk container putih bersih dengan bayangan lembut agar kartu masakan tampak timbul dari latar belakang."* |
-| **`AnimatedVisibility`** | `CartBar.kt` (`AnimatedVisibility`) | Memunculkan dan menyembunyikan Bar Keranjang secara halus (*slide up/down*). | *"AnimatedVisibility otomatis memunculkan bar keranjang melayang hanya ketika pengguna mulai memilih minimal 1 porsi makanan."* |
-| **`derivedStateOf`** | `MenuScreen.kt`, `CartScreen.kt` | Menhitung total item dan akumulasi harga Rupiah secara reaktif berdasarkan `cartState`. | *"derivedStateOf mengoptimalkan Recomposition agar perhitungan harga total hanya dieksekusi saat data keranjang benar-benar berubah."* |
 | **`rememberSaveable` + Custom `Saver`** | `AppNavHost.kt` (`rememberSaveable`) | Menjaga data porsi keranjang agar tidak hilang saat terjadi rotasi layar HP (*configuration change*). | *"rememberSaveable menyimpan state keranjang ke dalam Bundle sistem sehingga item belanjaan tetap tersimpan saat layar diputar."* |
-| **`NavHost` & `composable()`** | `AppNavHost.kt` (`NavHost()`) | Mengelola navigasi antarlayar (`Home` $\rightarrow$ `Menu` $\rightarrow$ `Cart`). | *"NavHost menangani perpindahan antar halaman secara deklaratif tanpa perlu Fragment atau Intent manual."* |
-| **`AlertDialog`** | `CartScreen.kt` (`AlertDialog`) | Menampilkan dialog pop-up konfirmasi pesanan setelah tombol "Konfirmasi & Pesan" diklik. | *"AlertDialog menampilkan ringkasan akhir pesanan sebagai simulasi pemicu pemesanan tanpa memerlukan backend server."* |
 
 ---
 
-## 2. DIAGRAM ALUR STATE (STATE HOISTING & RECOMPOSITION)
+## 2. DIAGRAM ALUR STATE & PEMESANAN
 
-Aplikasi menggunakan pola **State Hoisting** di mana `cartState` dikelola secara terpusat di [AppNavHost.kt](file:///home/ega156/PEMROGRAMAN_MOBILE/Onde_Mande/app/src/main/java/com/example/web_app_ondemande/navigation/AppNavHost.kt) dan diturunkan ke layar-layar bawah.
+Aplikasi menggunakan pola **State Hoisting** di mana `cartState` dikelola secara terpusat di [AppNavHost.kt](file:///home/ega156/PEMROGRAMAN_MOBILE/Onde_Mande/app/src/main/java/com/example/web_app_ondemande/navigation/AppNavHost.kt) dan diturunkan ke seluruh layar.
 
+### A. Alur Perubahan Kuantitas Item
 ```text
                [ USER INTERACTION ]
   (Pengguna menekan tombol + / - pada QuantityStepper)
@@ -45,9 +46,24 @@ Aplikasi menggunakan pola **State Hoisting** di mana `cartState` dikelola secara
                         │
                         ▼
                [ RECOMPOSITION ]
-  • MenuItemCard  -> Angka kuantitas berubah dengan animasi
-  • CartBar       -> Bar keranjang slide-in / angka total berubah
-  • CartScreen    -> Subtotal & daftar item diisi ulang
+  • MenuItemCard / CartItemCard -> Angka kuantitas berubah
+  • CartBar                     -> Slide-in / total berubah
+  • CartScreen                  -> Subtotal & daftar item diisi ulang
+```
+
+### B. Alur Eksekusi Pemesanan (Checkout Flow)
+```text
+  [ Tekan "Pesan Sekarang" ] ──► [ AlertDialog Konfirmasi ]
+                                        │
+                         ┌──────────────┴──────────────┐
+                         ▼                             ▼
+                 [ Tekan "Batal" ]          [ Tekan "Konfirmasi" ]
+                         │                             │
+                         ▼                             ▼
+                 (Tutup dialog saja)       1. cartState.clear() (Kosongkan keranjang)
+                                           2. Tampilkan Snackbar "Pesanan diterima!"
+                                           3. PopBackStack kembali ke Home
+                                           4. Menu & Cart otomatis bersih (Sinkron)
 ```
 
 ---
@@ -67,27 +83,24 @@ Aplikasi menggunakan pola **State Hoisting** di mana `cartState` dikelola secara
 
 ## 4. PETUNJUK PENGUJIAN MANUAL (VERIFIKASI FITUR)
 
-Untuk mendemonstrasikan aplikasi secara manual di emulator atau perangkat Android:
+1. **Sinkronisasi Lintas Halaman**:
+   - Tambah item di Menu (misal: 2x *Ayam Gulai*).
+   - Ketuk CartBar atau ikon Keranjang ber-badge di header TopBar untuk membuka halaman **Keranjang**.
+   - Ubah jumlah porsi di Keranjang (misal dikurangi jadi 1x *Ayam Gulai*).
+   - Tekan tombol Kembali `‹` ke Menu $\rightarrow$ Perhatikan angka di kartu Menu otomatis ikut berubah menjadi `1x` (100% sinkron).
 
-1. **Navigasi & Hero Section (Home)**:
-   - Buka aplikasi. Perhatikan judul Serif "*Cita Rasa Minang, Hangatnyo Rumah di Satiap Suapan*".
-   - Perhatikan **3D Carousel Foto Makanan** bergulir otomatis setiap 2.8 detik dengan transisi halus tanpa kliping.
-   - Lakukan geser (*swipe*) manual pada carousel untuk merasakan efek rotasi & skala 3D.
-   - Klik tombol **"Pesan Sekarang ›"** untuk berpindah ke layar Menu.
+2. **Animasi Hapus Item (`Modifier.animateItem()`)**:
+   - Pada halaman Keranjang, tekan tombol `-` pada suatu item hingga porsinya mencapai `0`.
+   - Perhatikan baris kartu item tersebut menghilang dengan animasi slide/fade yang mulus dan baris di bawahnya bergeser dengan rapi.
 
-2. **Katalog Menu & Stepper Kuantitas (Menu)**:
-   - Pada halaman Menu, klik tombol `+` pada salah satu masakan (misal: *Ayam Gulai*).
-   - Perhatikan tombol `+` bertransisi mulus menjadi stepper lengkap `[-] 1 [+]` menggunakan `AnimatedContent` & `animateContentSize`.
-   - Perhatikan **CartBar (Bar Keranjang Melayang)** otomatis muncul (*slide-up*) di bagian bawah layar menampilkan jumlah item dan total harga.
-   - Coba tekan tombol `-` hingga 0 porsi untuk memastikan stepper bertransisi kembali menjadi tombol `+` tunggal.
+3. **Input Catatan & Opsi Pengambilan**:
+   - Pilih opsi pengambilan ("Ambil di tempat" atau "Antar").
+   - Ketik pesan di kolom *Catatan untuk Dapur* (misal: *"sambal dipisah"*).
+   - Putar layar HP (*rotate device*) $\rightarrow$ Teks catatan dan pilihan opsi tidak hilang karena menggunakan `rememberSaveable`.
 
-3. **Pemeriksaan Ketahanan State (Rotasi Layar HP)**:
-   - Tambahkan beberapa item makanan (misal: 2x *Ayam Gulai*, 1x *Cumi Terong*).
-   - Putar layar HP (*rotate device*) ke orientasi Landscape lalu kembali ke Portrait.
-   - **Hasil Teruji**: Data porsi dan total harga di keranjang tidak hilang karena disimpan oleh `rememberSaveable`.
-
-4. **Ringkasan Keranjang & Konfirmasi Pesanan (Checkout)**:
-   - Klik tombol **"Pesan"** pada CartBar untuk masuk ke halaman **Keranjang Pesanan**.
-   - Perhatikan rincian item, perkalian harga porsi, subtotal, dan total pembayaran.
-   - Klik tombol **"Konfirmasi & Pesan"**. `AlertDialog` konfirmasi pesanan akan muncul menampilkan ringkasan pesanan.
-   - Klik tombol **"Selesai"** pada dialog untuk mengosongkan keranjang dan kembali ke katalog menu.
+4. **Proses Checkout & Snackbar**:
+   - Ketuk tombol **"Pesan Sekarang  •  Rp xx.xxx"**.
+   - `AlertDialog` konfirmasi akan muncul menampilkan rincian item, total harga, opsi pengiriman, dan catatan dapur.
+   - Tekan **"Ya, Pesan Sekarang"**.
+   - Keranjang akan otomatis dikosongkan (`cartState.clear()`), Snackbar *"Pesanan diterima, terima kasih!"* akan muncul, dan layar berpindah kembali ke **Home**.
+   - Buka kembali layar Menu atau Keranjang $\rightarrow$ Terbukti keranjang telah dalam keadaan kosong.

@@ -1,7 +1,7 @@
 package com.example.web_app_ondemande.data
 
 import com.example.web_app_ondemande.R
-import java.util.Locale
+import com.example.web_app_ondemande.util.formatRupiah
 
 /**
  * Daftar statis menu masakan Minang asli Onde Mande.
@@ -96,7 +96,6 @@ object MenuData {
      * Helper untuk format harga mata uang Rupiah.
      */
     fun formatRupiah(price: Int): String {
-        val formatted = String.format(Locale.US, "%,d", price).replace(',', '.')
-        return "Rp $formatted"
+        return com.example.web_app_ondemande.util.formatRupiah(price)
     }
 }
