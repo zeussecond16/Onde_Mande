@@ -6,7 +6,7 @@ Onde Mande adalah aplikasi pemesanan masakan Minang berbasis Android yang diranc
 
 ## 2. Fitur
 
-- **Halaman Utama (Home)**: Menampilkan spanduk hero dengan tipografi Serif khas Minang, tombol navigasi pemesanan, carousel foto makanan 3D bergulir otomatis, serta kartu informasi keunggulan restoran.
+- **Halaman Utama (Home)**: Menampilkan spanduk hero dengan tipografi Serif khas Minang, tombol navigasi pemesanan, carousel foto makanan 3D bergulir otomatis (diatur via `LaunchedEffect`), serta kartu informasi keunggulan restoran.
 - **Halaman Katalog (Menu)**: Menyajikan daftar 10 masakan Minang lengkap dengan foto, nama, harga, stepper porsi interaktif, ikon indikator badge pada header, serta bar keranjang melayang (*floating cart bar*) yang muncul otomatis saat terdapat item yang dipilih.
 - **Halaman Keranjang (Cart/Checkout)**: Menampilkan rincian daftar pesanan dengan animasi penghapusan item, pemilih opsi pengiriman (*Ambil di tempat* atau *Antar*), kolom catatan khusus dapur, ringkasan kalkulasi total pembayaran, serta dialog konfirmasi pesanan.
 
@@ -57,7 +57,7 @@ Aplikasi Onde Mande menerapkan pola arsitektur *Unidirectional Data Flow* (UDF) 
                                │
                                ▼
             [ Recomposition Komponen UI Terkait ]
-    HomeScreen  │  MenuScreen / CartBar  │  CartScreen
+              MenuScreen / CartBar  │  CartScreen
 ```
 
 ### Prinsip Utama
@@ -163,7 +163,7 @@ app/src/main/java/com/example/web_app_ondemande/
 - **Tanggung Jawab**: Menampilkan spanduk *landing page* dan carousel galeri 3D makanan unggulan.
 - **Komposisi**: [HomeScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/home/HomeScreen.kt) memuat struktur `Scaffold`, header navbar, spanduk hero, tombol CTA, [FoodCarousel.kt](app/src/main/java/com/example/web_app_ondemande/ui/home/FoodCarousel.kt), dan daftar artikel keunggulan.
 - **State**: `pagerState` dalam `FoodCarousel` yang diatur melalui `rememberPagerState`.
-- **Efek Tampilan**: Galeri foto yang bergulir otomatis setiap 2.8 detik dengan efek rotasi perspektif 3D yang halus.
+- **Efek Tampilan**: Galeri foto yang bergulir otomatis setiap 2.8 detik dengan efek rotasi perspektif 3D yang halus. Mekanisme auto-scroll diimplementasikan menggunakan `LaunchedEffect(pagerState)` dengan perulangan coroutine `delay(2800)` dan `pagerState.animateScrollToPage()`.
 
 > **Catatan Teknis: HorizontalPager, graphicsLayer, dan cameraDistance**
 >
@@ -185,12 +185,26 @@ app/src/main/java/com/example/web_app_ondemande/
 > )
 > ```
 
+> **Catatan Teknis: Modifier Chain dan Urutan Pengaplikasian**
+>
+> Pada Jetpack Compose, urutan pemanggilan fungsi pada `Modifier` memengaruhi hasil tata letak dan gambar secara signifikan. Sebagai contoh, pada tombol CTA di `HomeScreen.kt`, pemanggilan `.clip()` ditempatkan sebelum `.background()` untuk memotong area gambar latar belakang menjadi bentuk kapsul (*pill shape*). Pemanggilan `.clickable()` ditempatkan setelah `.background()` agar efek *ripple* klik tetap berada di dalam batas bentuk kapsul, sementara `.padding()` diletakkan di akhir untuk memberikan jarak dalam (*inner padding*).
+>
+> ```kotlin
+> Row(
+>     modifier = Modifier
+>         .clip(RoundedCornerShape(999.dp))
+>         .background(OndeMandeInk)
+>         .clickable { onNavigateToMenu() }
+>         .padding(start = 22.dp, top = 8.dp, bottom = 8.dp, end = 8.dp)
+> )
+> ```
+
 ### Modul Menu
 
 - **Tanggung Jawab**: Menampilkan daftar katalog hidangan masakan Minang beserta pengatur kuantitas porsi dan indikator keranjang.
 - **Komposisi**: [MenuScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/MenuScreen.kt) merangkai `Scaffold`, header top bar dengan `BadgedBox` & `Badge`, `LazyColumn` yang berisi [MenuItemCard.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/MenuItemCard.kt), [QuantityStepper.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/QuantityStepper.kt), serta [CartBar.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/CartBar.kt).
 - **State**: Menerima `cartState` dari modul navigasi. Total item dan total harga dihitung menggunakan `derivedStateOf`.
-- **Efek Tampilan**: Daftar makanan berulir cepat dengan bar keranjang melayang yang muncul secara otomatis (*slide-in*) saat keranjang berisi item.
+- **Efek Tampilan**: Daftar makanan bergulir cepat dengan bar keranjang melayang yang muncul secara otomatis (*slide-in*) saat keranjang berisi item.
 
 > **Catatan Teknis: LazyColumn dengan Key, derivedStateOf, dan AnimatedVisibility**
 >
@@ -216,7 +230,7 @@ app/src/main/java/com/example/web_app_ondemande/
 
 > **Catatan Teknis: QuantityStepper dengan AnimatedContent dan animateContentSize**
 >
-> Komponen [QuantityStepper.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/QuantityStepper.kt) bersifat stateless. Ketika kuantitas bernilai 0, hanya satu tombol `FilledIconButton` bertanda `+` yang ditampilkan. Ketika kuantitas bernilai $\ge 1$, tampilan bertransisi menjadi format penuh `[-] kuantitas [+]`.
+> Komponen [QuantityStepper.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/QuantityStepper.kt) bersifat stateless. Ketika kuantitas bernilai 0, hanya satu tombol `FilledIconButton` bertanda `+` yang ditampilkan. Ketika kuantitas bernilai ≥ 1, tampilan bertransisi menjadi format penuh `[-] kuantitas [+]`.
 >
 > Transisi perubahan bentuk wadah dianimasikan secara otomatis menggunakan `Modifier.animateContentSize()`. Perubahan angka kuantitas dianimasikan secara vertikal menggunakan `AnimatedContent` dengan transisi `slideInVertically` dan `fadeIn`.
 >
@@ -237,6 +251,25 @@ app/src/main/java/com/example/web_app_ondemande/
 > }
 > ```
 
+> **Catatan Teknis: Card, CardDefaults, Image, painterResource, dan ContentScale**
+>
+> Pada [MenuItemCard.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/MenuItemCard.kt), `Card` digunakan dengan `CardDefaults.cardElevation(defaultElevation = 2.dp)` untuk memberikan kontainer putih berbayangan lembut di atas latar belakang krem. Foto makanan dirender menggunakan `Image` yang dikombinasikan dengan `painterResource(id = item.imageRes)` dan `ContentScale.Crop` agar gambar lokal `.webp` terpotong secara presisi memenuhi area kotak `90.dp` dengan sudut membulat `16.dp`.
+>
+> ```kotlin
+> Card(
+>     shape = RoundedCornerShape(22.dp),
+>     colors = CardDefaults.cardColors(containerColor = Color.White),
+>     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+> ) {
+>     Image(
+>         painter = painterResource(id = item.imageRes),
+>         contentDescription = item.name,
+>         contentScale = ContentScale.Crop,
+>         modifier = Modifier.size(90.dp).clip(RoundedCornerShape(16.dp))
+>     )
+> }
+> ```
+
 ### Modul Keranjang
 
 - **Tanggung Jawab**: Menampilkan rincian pesanan, pemilih opsi pengiriman, kolom catatan dapur, kalkulasi total, serta konfirmasi checkout.
@@ -247,13 +280,53 @@ app/src/main/java/com/example/web_app_ondemande/
   - `showConfirmationDialog`: `mutableStateOf(false)` untuk mengontrol keterlihatan dialog konfirmasi.
 - **Efek Tampilan**: Pengurangan kuantitas item hingga nol akan menghapus baris kartu secara animatif melalui `Modifier.animateItem()`. Pengetikan pada kolom catatan tidak tertutup keyboard berkat `imePadding()`.
 
-> **Catatan Teknis: animateItem, SingleChoiceSegmentedButtonRow, dan OutlinedTextField dengan imePadding**
+> **Catatan Teknis: Scaffold, WindowInsets, navigationBarsPadding, dan imePadding**
+>
+> `Scaffold` memberikan struktur tata letak dasar dan menyediakan nilai `innerPadding` untuk dikonsumsi kontainer utama. Pada [CartScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CartScreen.kt), tombol aksi bawah diletakkan di `bottomBar` dengan dipadukan `Modifier.navigationBarsPadding()` agar posisinya berada tepat di atas bilah navigasi sistem. Kolom gulir utama dipadukan dengan `Modifier.imePadding()` agar posisi bidang input catatan otomatis bergeser naik ketika *Software Keyboard* (IME) muncul.
+>
+> ```kotlin
+> Scaffold(
+>     snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+>     bottomBar = {
+>         Box(modifier = Modifier.navigationBarsPadding().padding(20.dp)) {
+>             Button(onClick = { showConfirmationDialog = true }) { ... }
+>         }
+>     }
+> ) { innerPadding ->
+>     Column(modifier = Modifier.padding(innerPadding).imePadding()) { ... }
+> }
+> ```
+
+> **Catatan Teknis: AlertDialog, Snackbar, dan SnackbarHost**
+>
+> Konfirmasi pesanan pada [CartScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CartScreen.kt) dipicu melalui `AlertDialog` ketika tombol *Pesan Sekarang* diklik. Dialog menampilkan ringkasan pesanan, opsi pengiriman, catatan dapur, dan total pembayaran. Ketika pengguna mengonfirmasi pesanan (`confirmButton`), callback `onConfirmOrder()` dieksekusi untuk mengosongkan keranjang dan bernavigasi ke Home, diiringi pesan singkat melayang yang dipicu melalui `SnackbarHostState.showSnackbar("Pesanan diterima, terima kasih!")`.
+>
+> ```kotlin
+> if (showConfirmationDialog) {
+>     AlertDialog(
+>         onDismissRequest = { showConfirmationDialog = false },
+>         title = { Text("Konfirmasi Pesanan") },
+>         text = { Text("Total Pembayaran: ${formatRupiah(totalPrice)}") },
+>         confirmButton = {
+>             Button(onClick = {
+>                 showConfirmationDialog = false
+>                 onConfirmOrder()
+>                 coroutineScope.launch {
+>                     snackbarHostState.showSnackbar("Pesanan diterima, terima kasih!")
+>                 }
+>             }) { Text("Ya, Pesan Sekarang") }
+>         }
+>     )
+> }
+> ```
+
+> **Catatan Teknis: animateItem, SingleChoiceSegmentedButtonRow, dan OutlinedTextField**
 >
 > Penghapusan item dari daftar pesanan di dalam `LazyColumn` menggunakan `Modifier.animateItem()`. Modifier ini secara otomatis menerapkan animasi *fade* dan pergeseran posisi pada baris lain ketika suatu item dihapus dari peta data.
 >
 > Pemilihan opsi pengiriman memanfaatkan komponen Material Design 3 `SingleChoiceSegmentedButtonRow` dan `SegmentedButton`.
 >
-> Penginputan catatan dapur menggunakan `OutlinedTextField` yang dipadukan dengan `Modifier.imePadding()` pada kontainer utama. Modifier ini menyesuaikan *padding* secara dinamis sesuai tinggi *Software Keyboard* (IME) yang muncul, mencegah kolom input tertutup saat pengguna mengetik.
+> Penginputan catatan dapur menggunakan `OutlinedTextField` yang dipadukan dengan `rememberSaveable` agar teks catatan tidak hilang saat orientasi layar HP berubah.
 >
 > ```kotlin
 > LazyColumn {
@@ -312,7 +385,7 @@ Manajemen state pada aplikasi Onde Mande menerapkan prinsip *State Hoisting* mur
 
 ### Ketahanan State Saat Rotasi Layar
 
-Saat terjadi perubahan konfigurasi perangkat (seperti rotasi layar dari Portrait ke Landscape), Android akan menghancurkan dan membuat ulang `Activity`. Karena `cartState` disimpan menggunakan `rememberSaveable` dengan `Saver` kustom yang merekam seluruh pasangan kunci-nilai ke dalam `Bundle` sistem, isi keranjang belanja tetap pulih secara sempurna tanpa kehilangan data.
+Saat terjadi perubahan konfigurasi perangkat (seperti rotasi layar dari Portrait ke Landscape), Android akan menghancurkan dan membuat ulang `Activity`. Karena `cartState` disimpan menggunakan `rememberSaveable` dengan `Saver` kustom yang merekam seluruh pasangan kunci-nilai ke dalam `Bundle` sistem, isi keranjang belanja tetap pulih secara konsisten tanpa kehilangan data.
 
 ## 8. Tema dan Desain
 
@@ -347,19 +420,19 @@ Tipografi dikonfigurasi dalam [Type.kt](app/src/main/java/com/example/web_app_on
 
 ## 9. Aset
 
- Seluruh aset visual gambar masakan disimpan dalam direktori drawable lokal:
+Seluruh aset visual gambar masakan disimpan dalam direktori drawable lokal:
 
 - **Lokasi**: `app/src/main/res/drawable/`
 - **Konvensi Penamaan**: Menggunakan format nama *snake_case* huruf kecil tanpa spasi (contoh: `naspad_ayam_gulai.webp`, `naspad_cumi_terong.webp`).
-- **Format dan Kompresi**: Berformat WebP terkompresi dengan ukuran file berkisar antara 13 KB hingga 16 KB per gambar, menjamin waktu pemuatan gambar yang instan tanpa membebani memori kerja RAM.
+- **Format dan Kompresi**: Berformat WebP terkompresi dengan ukuran file berkisar antara 13 KB hingga 16 KB per gambar, menjamin waktu pemuatan gambar yang cepat dan efisien dalam penggunaan memori.
 
 ## 10. Build dan Menjalankan
 
 ### Prasyarat
 
-- **Android Studio**: Android Studio Ladybug (2024.2.1) atau versi yang lebih baru.
-- **JDK**: Java Development Kit versi 11 atau yang lebih baru.
-- **Android SDK**: Android SDK Platform API Level 37.
+- **Android Studio**: Android Studio Ladybug (2024.2.1) / Meerkat atau versi yang lebih baru yang mendukung AGP 9.3.3 dan Gradle 9.5.0.
+- **JDK**: Java Development Kit versi 17 atau JDK 21 (sesuai persyaratan minimum AGP 8.0+/9.0+).
+- **Android SDK**: Android SDK Platform API Level 37 (Compile SDK 37, Target SDK 37, Min SDK 24).
 
 ### Perintah Build
 
