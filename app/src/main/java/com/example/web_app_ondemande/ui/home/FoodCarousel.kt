@@ -1,48 +1,79 @@
 package com.example.web_app_ondemande.ui.home
 
+import android.graphics.BlurMaskFilter
+import android.graphics.Paint
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.lerp
+import androidx.compose.ui.zIndex
 import com.example.web_app_ondemande.data.MenuData
 import com.example.web_app_ondemande.data.MenuItem
 import com.example.web_app_ondemande.ui.theme.OndeMandeCardImageBg
+import com.example.web_app_ondemande.ui.theme.OndeMandeCream
 import com.example.web_app_ondemande.ui.theme.OndeMandeTheme
 import kotlinx.coroutines.delay
 import kotlin.math.absoluteValue
 
+// ====== PENGATURAN KARTU (angka sama dengan versi HTML/CSS awal) ======
+private val CARD_WIDTH = 150.dp         // lebar kartu
+private val CARD_HEIGHT = 210.dp        // tinggi kartu
+private val CARD_STEP = 120.dp          // jarak antar kartu
+private val CARD_RADIUS = 20.dp         // lengkung sudut
+private const val TILT_DEGREES = 28f    // sudut putar per kartu
+private const val SCALE_DROP = 0.08f    // kartu mengecil per langkah dari tengah
+private const val FADE_PER_STEP = 0.12f // kartu memudar per langkah dari tengah
+private const val DEPTH_DP = 90f        // seberapa jauh kartu samping "mundur" ke belakang
+private const val PERSPECTIVE_DP = 900f // kekuatan perspektif 3D
+private const val AUTO_SCROLL_MS = 2800L
+private const val SCROLL_ANIM_MS = 700
+
+// ====== PENGATURAN BAYANGAN (setara CSS: 0 12px 30px rgba(0,0,0,.15)) ======
+private val SHADOW_BLUR = 30.dp         // seberapa menyebar / lembut
+private val SHADOW_OFFSET_Y = 12.dp     // seberapa turun ke bawah
+private const val SHADOW_ALPHA = 0.12f  // gelap-terang (0.05 = sangat tipis, 0.2 = tegas)
+
 /**
- * Komponen Carousel Makanan Bergulir 3D Halus di Halaman Utama.
+ * Carousel foto bergulir melengkung (desain awal), ringan dan looping tanpa ujung.
  *
- * Fitur Compose:
- * - HorizontalPager + rememberPagerState: Membuat galeri bergulir horizontal dengan pageSpacing 12.dp.
- * - Modifier.graphicsLayer dengan cameraDistance = 8 * density: Mengatur efek rotasi Y halus (maksimal 12 derajat),
- *   skala, dan transparansi (alpha) tanpa adanya potongan kasar atau distorsi miring berlebihan.
- * - LaunchedEffect: Menjalankan pemutaran otomatis (auto-scroll) setiap 2.8 detik.
- *
- * Bagian Tampilan:
- * - Menampilkan foto makanan unggulan yang berputar mulus dan rapi di halaman Home.
+ * - Looping: jumlah halaman Int.MAX_VALUE + foto dipilih dengan `page % items.size`.
+ * - Kartu menumpuk: ukuran halaman (CARD_STEP) lebih kecil dari lebar kartu (CARD_WIDTH).
+ * - Efek 3D: perspektif dihitung manual (Compose tidak punya translateZ seperti CSS).
+ * - Bayangan: satu bentuk yang di-blur (BlurMaskFilter), seperti box-shadow di CSS,
+ *   jadi tipis dan lembut, bukan tumpukan kotak.
+ * - Semua posisi dibaca di dalam graphicsLayer / draw, jadi tidak ada recomposition per frame.
  */
 @Composable
 fun FoodCarousel(
@@ -50,86 +81,114 @@ fun FoodCarousel(
     onItemClick: (MenuItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Paint bayangan dibuat sekali saja (tidak dibuat ulang tiap frame)
+    val density = LocalDensity.current
+    val shadowPaint = remember(density) {
+        Paint().apply {
+            isAntiAlias = true
+            color = Color.Black.copy(alpha = SHADOW_ALPHA).toArgb()
+            // radius BlurMaskFilter ~ 0.85 x blur CSS supaya hasilnya setara
+            val radiusPx = with(density) { SHADOW_BLUR.toPx() } * 0.85f
+            maskFilter = BlurMaskFilter(radiusPx, BlurMaskFilter.Blur.NORMAL)
+        }
+    }
+
+    if (items.isEmpty()) return
+
+    val count = items.size
+    val startPage = (Int.MAX_VALUE / 2) - ((Int.MAX_VALUE / 2) % count)
     val pagerState = rememberPagerState(
-        initialPage = 0,
-        pageCount = { items.size }
+        initialPage = startPage,
+        pageCount = { Int.MAX_VALUE }
     )
 
-    val density = LocalDensity.current.density
-
-    // Auto-scroll pelan setiap 2800 ms
     LaunchedEffect(pagerState) {
         while (true) {
-            delay(2800)
-            if (items.isNotEmpty()) {
-                val nextPage = (pagerState.currentPage + 1) % items.size
-                pagerState.animateScrollToPage(nextPage)
+            delay(AUTO_SCROLL_MS)
+            if (!pagerState.isScrollInProgress) {
+                pagerState.animateScrollToPage(
+                    page = pagerState.currentPage + 1,
+                    animationSpec = tween(durationMillis = SCROLL_ANIM_MS, easing = FastOutSlowInEasing)
+                )
             }
         }
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .height(290.dp),
+            .height(CARD_HEIGHT + 90.dp),   // ruang ekstra supaya bayangan tidak terpotong
         contentAlignment = Alignment.Center
     ) {
+        val sidePadding = (maxWidth - CARD_STEP) / 2
+
         HorizontalPager(
             state = pagerState,
-            contentPadding = PaddingValues(horizontal = 60.dp),
-            pageSpacing = 12.dp,
-            modifier = Modifier.fillMaxWidth()
+            pageSize = PageSize.Fixed(CARD_STEP),
+            contentPadding = PaddingValues(horizontal = sidePadding),
+            pageSpacing = 0.dp,
+            beyondViewportPageCount = 3,
+            modifier = Modifier.fillMaxSize()
         ) { page ->
-            val pageOffset = (
-                (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
-            )
-            val absOffset = pageOffset.absoluteValue
-            val menuItem = items[page]
+            val menuItem = items[page % count]
 
-            Card(
+            // Jarak kartu dari tengah: 0 = tengah, + = kanan, - = kiri (dibaca saat menggambar saja)
+            val offsetOf = { (page - pagerState.currentPage) - pagerState.currentPageOffsetFraction }
+
+            // Urutan tumpukan hanya berubah saat kartu aktif ganti
+            val distance by remember { derivedStateOf { (page - pagerState.currentPage).absoluteValue } }
+
+            Box(
                 modifier = Modifier
-                    .width(220.dp)
-                    .height(260.dp)
-                    .graphicsLayer {
-                        // Skala halus dari 0.88f ke 1.0f
-                        val scale = lerp(
-                            start = 0.88f,
-                            stop = 1f,
-                            fraction = 1f - absOffset.coerceIn(0f, 1f)
-                        )
-                        scaleX = scale
-                        scaleY = scale
-
-                        // Transparansi dari 0.65f ke 1.0f
-                        alpha = lerp(
-                            start = 0.65f,
-                            stop = 1f,
-                            fraction = 1f - absOffset.coerceIn(0f, 1f)
-                        )
-
-                        // Rotasi Y halus (maksimal -12 derajat sampai 12 derajat)
-                        rotationY = lerp(
-                            start = -12f,
-                            stop = 12f,
-                            fraction = pageOffset.coerceIn(-1f, 1f)
-                        )
-
-                        // Mencegah kliping/terpotong kasar dengan jarak kamera berpresisi
-                        cameraDistance = 8 * density
-                    }
-                    .clickable { onItemClick(menuItem) },
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = OndeMandeCardImageBg),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                    .fillMaxSize()
+                    .zIndex(10f - distance),
+                contentAlignment = Alignment.Center
             ) {
-                Image(
-                    painter = painterResource(id = menuItem.imageRes),
-                    contentDescription = menuItem.name,
-                    contentScale = ContentScale.Crop,
+                Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(24.dp))
-                )
+                        .requiredSize(CARD_WIDTH, CARD_HEIGHT)
+                        .graphicsLayer {
+                            val d = offsetOf()
+                            val a = d.absoluteValue.coerceAtMost(3f)
+
+                            // Perspektif ala CSS: makin jauh dari tengah, makin kecil & makin dekat ke tengah
+                            val factor = PERSPECTIVE_DP / (PERSPECTIVE_DP + a * DEPTH_DP)
+                            val s = ((1f - a * SCALE_DROP) * factor).coerceAtLeast(0.3f)
+                            scaleX = s
+                            scaleY = s
+                            translationX = d * CARD_STEP.toPx() * (factor - 1f)
+
+                            // Jika kartu samping terlihat miring ke arah sebaliknya (sisi luar harusnya
+                            // lebih dekat ke kamu), ganti jadi: -d.coerceIn(-3f, 3f) * TILT_DEGREES
+                            rotationY = d.coerceIn(-3f, 3f) * TILT_DEGREES
+                            cameraDistance = 6f * density.density
+                        }
+                        // bayangan lembut (satu bentuk di-blur, ikut berputar bersama kartu)
+                        .drawBehind {
+                            val r = CARD_RADIUS.toPx()
+                            val dy = SHADOW_OFFSET_Y.toPx()
+                            drawIntoCanvas { canvas ->
+                                canvas.nativeCanvas.drawRoundRect(
+                                    0f, dy, size.width, size.height + dy, r, r, shadowPaint
+                                )
+                            }
+                        }
+                        .clip(RoundedCornerShape(CARD_RADIUS))
+                        .background(OndeMandeCardImageBg)
+                        // efek pudar: lapisan krem tipis di atas foto (lebih ringan dari alpha)
+                        .drawWithContent {
+                            drawContent()
+                            val fade = (offsetOf().absoluteValue * FADE_PER_STEP).coerceIn(0f, 0.35f)
+                            if (fade > 0f) drawRect(OndeMandeCream.copy(alpha = fade))
+                        }
+                ) {
+                    Image(
+                        painter = painterResource(id = menuItem.imageRes),
+                        contentDescription = menuItem.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
     }

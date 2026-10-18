@@ -53,6 +53,7 @@ import com.example.web_app_ondemande.ui.theme.OndeMandeTheme
 @Composable
 fun HomeScreen(
     onNavigateToMenu: () -> Unit,
+    onNavigateToCart: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -86,7 +87,7 @@ fun HomeScreen(
                         .size(40.dp)
                         .clip(CircleShape)
                         .background(OndeMandeInk)
-                        .clickable { onNavigateToMenu() },
+                        .clickable { onNavigateToCart() },
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
@@ -113,7 +114,7 @@ fun HomeScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp, vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
                     text = "Cita Rasa Minang,",
@@ -234,6 +235,6 @@ private fun FeatureArticle(
 @Composable
 fun HomeScreenPreview() {
     OndeMandeTheme {
-        HomeScreen(onNavigateToMenu = {})
+        HomeScreen(onNavigateToMenu = {}, onNavigateToCart = {})
     }
 }

@@ -67,11 +67,14 @@ fun AppNavHost(
         startDestination = Screen.Home.route,
         modifier = modifier
     ) {
-        // Layar Utama (Home)
+// Layar Utama (Home)
         composable(Screen.Home.route) {
             HomeScreen(
                 onNavigateToMenu = {
                     navController.navigate(Screen.Menu.route)
+                },
+                onNavigateToCart = {
+                    navController.navigate(Screen.Cart.route)
                 }
             )
         }
