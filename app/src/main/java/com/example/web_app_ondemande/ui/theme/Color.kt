@@ -12,3 +12,4 @@ val OndeMandeStepperBg = Color(0xFFF3ECDA)   // Latar belakang stepper +/-
 val OndeMandeCardImageBg = Color(0xFFCFC8B8) // Latar gambar placeholder
 val OndeMandeSurface = Color(0xFFFFFFFF)     // Latar kartu / Card
 val OndeMandeDarkBtn = Color(0xFF3A3A3A)     // Latar lingkaran panah CTA
+val OndeMandeError = Color(0xFFC62828)       // Warna merah bata hangat untuk status error

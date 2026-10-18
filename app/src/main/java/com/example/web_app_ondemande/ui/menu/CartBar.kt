@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -35,6 +36,7 @@ import com.example.web_app_ondemande.ui.theme.OndeMandeTheme
  *
  * Fitur Compose:
  * - AnimatedVisibility dengan slideInVertically & slideOutVertically untuk efek kemunculan halus saat totalItems > 0.
+ * - navigationBarsPadding() agar posisinya berada tepat di atas bilah navigasi sistem tanpa terpotong.
  * - Card melayang dengan RoundedCornerShape(999.dp) (pill shape) & CardDefaults.cardElevation.
  * - Row & Column untuk memisahkan info keranjang (jumlah item & total harga) dan tombol aksi "Pesan ›".
  *
@@ -54,66 +56,71 @@ fun CartBar(
         exit = slideOutVertically(targetOffsetY = { it }),
         modifier = modifier
     ) {
-        Card(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            shape = RoundedCornerShape(999.dp),
-            colors = CardDefaults.cardColors(containerColor = OndeMandeInk),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 22.dp, top = 8.dp, bottom = 8.dp, end = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(999.dp),
+                colors = CardDefaults.cardColors(containerColor = OndeMandeInk),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
-                // Info Item & Total Harga
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        text = "$totalItems item",
-                        fontSize = 12.sp,
-                        color = Color.White.copy(alpha = 0.9f)
-                    )
-                    Text(
-                        text = MenuData.formatRupiah(totalPrice),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-
-                // Tombol "Pesan ›"
                 Row(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(999.dp))
-                        .background(Color.White)
-                        .clickable { onCartClick() }
-                        .padding(start = 18.dp, top = 8.dp, bottom = 8.dp, end = 8.dp),
+                        .fillMaxWidth()
+                        .padding(start = 22.dp, top = 8.dp, bottom = 8.dp, end = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = "Pesan",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = OndeMandeInk
-                    )
-                    // Lingkaran ikon panah ›
-                    Box(
-                        modifier = Modifier
-                            .size(28.dp)
-                            .clip(CircleShape)
-                            .background(OndeMandeInk),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    // Info Item & Total Harga
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(
-                            text = "›",
-                            fontSize = 18.sp,
+                            text = "$totalItems item",
+                            fontSize = 12.sp,
+                            color = Color.White.copy(alpha = 0.9f)
+                        )
+                        Text(
+                            text = MenuData.formatRupiah(totalPrice),
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
+                    }
+
+                    // Tombol "Pesan ›"
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(Color.White)
+                            .clickable { onCartClick() }
+                            .padding(start = 18.dp, top = 8.dp, bottom = 8.dp, end = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(
+                            text = "Pesan",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = OndeMandeInk
+                        )
+                        // Lingkaran ikon panah ›
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clip(CircleShape)
+                                .background(OndeMandeInk),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "›",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
             }

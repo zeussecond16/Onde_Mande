@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -47,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -54,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.web_app_ondemande.data.MenuData
 import com.example.web_app_ondemande.ui.theme.OndeMandeTheme
+import com.example.web_app_ondemande.util.Validation
 import com.example.web_app_ondemande.util.formatRupiah
 import kotlinx.coroutines.launch
 
@@ -63,12 +66,12 @@ import kotlinx.coroutines.launch
  * Fitur Compose:
  * - Scaffold dengan bottomBar & SnackbarHost untuk konfirmasi pesanan.
  * - SingleChoiceSegmentedButtonRow (Material 3) untuk opsi pengambilan ("Ambil di tempat" & "Antar").
- * - OutlinedTextField dengan rememberSaveable & imePadding agar input catatan dapur tidak tertutup keyboard.
- * - LazyColumn dengan items(key = { it.id }) dan Modifier.animateItem() untuk animasi penghapusan item yang mulus.
- * - State Hoisting terpusat untuk sinkronisasi jumlah porsi lintas halaman.
+ * - CustomerFormSection untuk pengisian Data Pemesan (Nama, Telepon, Alamat bersyarat) dengan validasi murni.
+ * - LazyColumn dengan rememberLazyListState & animateScrollToItem untuk pengguliran otomatis ke field bermasalah.
+ * - OutlinedTextField dengan rememberSaveable & imePadding agar input tidak tertutup keyboard HP.
  *
  * Bagian Tampilan:
- * - Menampilkan item pesanan, opsi pengiriman, catatan dapur, ringkasan pembayaran, dan konfirmasi checkout.
+ * - Menampilkan item pesanan, opsi pengiriman, form data pemesan, catatan dapur, ringkasan pembayaran, dan konfirmasi checkout.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,10 +85,25 @@ fun CartScreen(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
+    val lazyListState = rememberLazyListState()
 
     var showConfirmationDialog by remember { mutableStateOf(false) }
     var selectedDeliveryOption by rememberSaveable { mutableIntStateOf(0) } // 0: Ambil di tempat, 1: Antar
+    val isDelivery = selectedDeliveryOption == 1
+
+    // State Form Data Pemesan (rememberSaveable agar tahan rotasi layar)
+    var name by rememberSaveable { mutableStateOf("") }
+    var phone by rememberSaveable { mutableStateOf("") }
+    var address by rememberSaveable { mutableStateOf("") }
     var kitchenNotes by rememberSaveable { mutableStateOf("") }
+    var submitAttempted by rememberSaveable { mutableStateOf(false) }
+
+    // Evaluasi Pesan Error (Hanya jika submitAttempted == true)
+    val nameError = if (submitAttempted) Validation.validateName(name) else null
+    val phoneError = if (submitAttempted) Validation.validatePhone(phone) else null
+    val addressError = if (submitAttempted) Validation.validateAddress(address, isDelivery) else null
+    val isFormValid = nameError == null && phoneError == null && addressError == null
 
     val deliveryOptions = listOf("Ambil di tempat", "Antar")
 
@@ -123,7 +141,18 @@ fun CartScreen(
                         .padding(horizontal = 20.dp, vertical = 12.dp)
                 ) {
                     Button(
-                        onClick = { showConfirmationDialog = true },
+                        onClick = {
+                            if (!isFormValid) {
+                                submitAttempted = true
+                                // Gulir ke bagian form pemesan jika ada error
+                                coroutineScope.launch {
+                                    lazyListState.animateScrollToItem(index = 3)
+                                }
+                            } else {
+                                focusManager.clearFocus()
+                                showConfirmationDialog = true
+                            }
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(54.dp),
@@ -193,6 +222,7 @@ fun CartScreen(
             } else {
                 // Tampilan Keranjang Berisi Item
                 LazyColumn(
+                    state = lazyListState,
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -270,6 +300,23 @@ fun CartScreen(
                         }
                     }
 
+                    // Form Data Pemesan (Nama, Telepon, Alamat bersyarat)
+                    item(key = "customer_form") {
+                        CustomerFormSection(
+                            name = name,
+                            onNameChange = { name = it },
+                            nameError = nameError,
+                            phone = phone,
+                            onPhoneChange = { phone = it },
+                            phoneError = phoneError,
+                            address = address,
+                            onAddressChange = { address = it },
+                            addressError = addressError,
+                            isDelivery = isDelivery,
+                            focusManager = focusManager
+                        )
+                    }
+
                     // Input Catatan untuk Dapur
                     item(key = "kitchen_notes") {
                         Column(
@@ -290,7 +337,8 @@ fun CartScreen(
                                         color = MaterialTheme.colorScheme.secondary
                                     )
                                 },
-                                maxLines = 2,
+                                minLines = 2,
+                                maxLines = 4,
                                 shape = RoundedCornerShape(16.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedContainerColor = Color.White,
@@ -332,10 +380,15 @@ fun CartScreen(
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(text = "Rincian Pesanan:")
+                    Text(text = "Rincian Pemesan:")
                     Text(
-                        text = orderSummaryText,
-                        fontWeight = FontWeight.SemiBold,
+                        text = "Nama: ${name.trim()}",
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Telepon: ${phone.trim()}",
+                        fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
@@ -343,13 +396,27 @@ fun CartScreen(
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.secondary
                     )
-                    if (kitchenNotes.isNotBlank()) {
+                    if (isDelivery && address.isNotBlank()) {
                         Text(
-                            text = "Catatan: \"$kitchenNotes\"",
+                            text = "Alamat: ${address.trim()}",
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.secondary
                         )
                     }
+                    if (kitchenNotes.isNotBlank()) {
+                        Text(
+                            text = "Catatan Dapur: \"${kitchenNotes.trim()}\"",
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Daftar Item: $orderSummaryText",
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                     Text(
                         text = "Total Pembayaran: ${formatRupiah(totalPrice)}",
                         fontWeight = FontWeight.Bold,
@@ -362,6 +429,15 @@ fun CartScreen(
                     onClick = {
                         showConfirmationDialog = false
                         onConfirmOrder()
+
+                        // Reset seluruh form lokal
+                        name = ""
+                        phone = ""
+                        address = ""
+                        kitchenNotes = ""
+                        selectedDeliveryOption = 0
+                        submitAttempted = false
+
                         coroutineScope.launch {
                             snackbarHostState.showSnackbar("Pesanan diterima, terima kasih!")
                         }

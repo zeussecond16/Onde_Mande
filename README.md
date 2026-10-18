@@ -8,7 +8,7 @@ Onde Mande adalah aplikasi pemesanan masakan Minang berbasis Android yang diranc
 
 - **Halaman Utama (Home)**: Menampilkan spanduk hero dengan tipografi Serif khas Minang, tombol navigasi pemesanan, carousel foto makanan 3D bergulir otomatis (diatur via `LaunchedEffect`), serta kartu informasi keunggulan restoran.
 - **Halaman Katalog (Menu)**: Menyajikan daftar 10 masakan Minang lengkap dengan foto, nama, harga, stepper porsi interaktif, ikon indikator badge pada header, serta bar keranjang melayang (*floating cart bar*) yang muncul otomatis saat terdapat item yang dipilih.
-- **Halaman Keranjang (Cart/Checkout)**: Menampilkan rincian daftar pesanan dengan animasi penghapusan item, pemilih opsi pengiriman (*Ambil di tempat* atau *Antar*), kolom catatan khusus dapur, ringkasan kalkulasi total pembayaran, serta dialog konfirmasi pesanan.
+- **Halaman Keranjang (Cart/Checkout)**: Menampilkan rincian daftar pesanan dengan animasi penghapusan item, pemilih opsi pengiriman (*Ambil di tempat* atau *Antar*), form data pemesan (Nama, Nomor Telepon, Alamat bersyarat) dengan validasi format Indonesia, kolom catatan khusus dapur, ringkasan kalkulasi total pembayaran, serta dialog konfirmasi pesanan.
 
 ## 3. Teknologi
 
@@ -35,9 +35,10 @@ Aplikasi Onde Mande menerapkan pola arsitektur *Unidirectional Data Flow* (UDF) 
 - **Navigasi**: [AppNavHost.kt](app/src/main/java/com/example/web_app_ondemande/navigation/AppNavHost.kt) mengelola deklarasi rute halaman (`Home`, `Menu`, `Cart`) dan siklus navigasi.
 - **State Layer**: Pemilik tunggal kebenaran state keranjang (*Single Source of Truth*) dipertahankan di tingkat teratas navigasi menggunakan `rememberSaveable`.
 - **Layar (Screen)**: [HomeScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/home/HomeScreen.kt), [MenuScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/MenuScreen.kt), dan [CartScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CartScreen.kt) bertindak sebagai kontainer tingkat halaman yang merangkai komponen-komponen UI.
-- **Komponen UI Stateless**: Komponen atomik seperti [QuantityStepper.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/QuantityStepper.kt), [MenuItemCard.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/MenuItemCard.kt), [CartItemCard.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CartItemCard.kt), dan [OrderSummaryCard.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/OrderSummaryCard.kt) yang murni menerima data dan memicu callback event.
+- **Komponen UI Stateless**: Komponen atomik seperti [QuantityStepper.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/QuantityStepper.kt), [MenuItemCard.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/MenuItemCard.kt), [CartItemCard.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CartItemCard.kt), [CustomerFormSection.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CustomerFormSection.kt), dan [OrderSummaryCard.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/OrderSummaryCard.kt) yang murni menerima data dan memicu callback event.
 - **Data Layer**: [MenuItem.kt](app/src/main/java/com/example/web_app_ondemande/data/MenuItem.kt) dan [MenuData.kt](app/src/main/java/com/example/web_app_ondemande/data/MenuData.kt) menyediakan struktur data dan sumber katalog statis.
 - **Tema**: [Theme.kt](app/src/main/java/com/example/web_app_ondemande/ui/theme/Theme.kt), [Color.kt](app/src/main/java/com/example/web_app_ondemande/ui/theme/Color.kt), dan [Type.kt](app/src/main/java/com/example/web_app_ondemande/ui/theme/Type.kt) mendefinisikan warna, tipografi, dan gaya visual Material 3 secara terpusat.
+- **Utilitas**: [Validation.kt](app/src/main/java/com/example/web_app_ondemande/util/Validation.kt) dan [Format.kt](app/src/main/java/com/example/web_app_ondemande/util/Format.kt) menyediakan fungsi pembantu murni untuk validasi input dan pemformatan Rupiah.
 
 ### Diagram Aliran Data dan State
 
@@ -83,6 +84,7 @@ app/src/main/java/com/example/web_app_ondemande/
 │   ├── cart/
 │   │   ├── CartItemCard.kt              # Komponen baris kartu pesanan di keranjang
 │   │   ├── CartScreen.kt                # Layar checkout, opsi pengiriman, dan konfirmasi pesanan
+│   │   ├── CustomerFormSection.kt       # Komponen form data pemesan (Nama, Telepon, Alamat)
 │   │   ├── EmptyCartState.kt            # Tampilan visual saat keranjang kosong
 │   │   └── OrderSummaryCard.kt          # Kartu ringkasan kalkulasi total pembayaran
 │   ├── home/
@@ -98,7 +100,8 @@ app/src/main/java/com/example/web_app_ondemande/
 │       ├── Theme.kt                     # Setup MaterialTheme dengan LightColorScheme
 │       └── Type.kt                      # Konfigurasi gaya tipografi Serif dan Sans-Serif
 └── util/
-    └── Format.kt                        # Fungsi utilitas format mata uang Rupiah
+    ├── Format.kt                        # Fungsi utilitas format mata uang Rupiah
+    └── Validation.kt                    # Fungsi utilitas murni untuk validasi input form
 ```
 
 ## 6. Penjelasan Modul
@@ -112,7 +115,7 @@ app/src/main/java/com/example/web_app_ondemande/
 
 > **Catatan Teknis: MaterialTheme, ColorScheme, dan Typography**
 >
-> Pengaturan tema pada Compose dilakukan menggunakan `MaterialTheme` dari Material Design 3. Warna dikelompokkan ke dalam peran semantik seperti `primary`, `background`, `surface`, dan `secondary`. Tipografi dikonfigurasi menggunakan `Typography` dengan pemetaan `FontFamily.Serif` untuk judul berkesan tradisional Minang dan `FontFamily.Default` untuk isi teks.
+> Pengaturan tema pada Compose dilakukan menggunakan `MaterialTheme` dari Material Design 3. Warna dikelompokkan ke dalam peran semantik seperti `primary`, `background`, `surface`, `secondary`, dan `error`. Tipografi dikonfigurasi menggunakan `Typography` dengan pemetaan `FontFamily.Serif` untuk judul berkesan tradisional Minang dan `FontFamily.Default` untuk isi teks.
 >
 > ```kotlin
 > @Composable
@@ -272,13 +275,33 @@ app/src/main/java/com/example/web_app_ondemande/
 
 ### Modul Keranjang
 
-- **Tanggung Jawab**: Menampilkan rincian pesanan, pemilih opsi pengiriman, kolom catatan dapur, kalkulasi total, serta konfirmasi checkout.
-- **Komposisi**: [CartScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CartScreen.kt) merangkai `Scaffold`, `SnackbarHost`, `LazyColumn` yang berisi [CartItemCard.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CartItemCard.kt), `SingleChoiceSegmentedButtonRow`, `OutlinedTextField`, [OrderSummaryCard.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/OrderSummaryCard.kt), [EmptyCartState.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/EmptyCartState.kt), dan `AlertDialog`.
+- **Tanggung Jawab**: Menampilkan rincian pesanan, pemilih opsi pengiriman, form data pemesan, kolom catatan dapur, kalkulasi total, serta konfirmasi checkout.
+- **Komposisi**: [CartScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CartScreen.kt) merangkai `Scaffold`, `SnackbarHost`, `LazyColumn` yang berisi [CartItemCard.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CartItemCard.kt), `SingleChoiceSegmentedButtonRow`, [CustomerFormSection.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CustomerFormSection.kt), `OutlinedTextField`, [OrderSummaryCard.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/OrderSummaryCard.kt), [EmptyCartState.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/EmptyCartState.kt), dan `AlertDialog`.
 - **State**:
   - `selectedDeliveryOption`: `mutableIntStateOf(0)` dibungkus `rememberSaveable` untuk memilih opsi *Ambil di tempat* atau *Antar*.
+  - `name`, `phone`, `address`: `mutableStateOf("")` dibungkus `rememberSaveable` untuk menampung input pemesan.
+  - `submitAttempted`: `mutableStateOf(false)` dibungkus `rememberSaveable` untuk mengontrol pemicu tampilan error validasi.
   - `kitchenNotes`: `mutableStateOf("")` dibungkus `rememberSaveable` untuk menyimpan masukan catatan dapur.
   - `showConfirmationDialog`: `mutableStateOf(false)` untuk mengontrol keterlihatan dialog konfirmasi.
-- **Efek Tampilan**: Pengurangan kuantitas item hingga nol akan menghapus baris kartu secara animatif melalui `Modifier.animateItem()`. Pengetikan pada kolom catatan tidak tertutup keyboard berkat `imePadding()`.
+- **Efek Tampilan**: Pengurangan kuantitas item hingga nol akan menghapus baris kartu secara animatif melalui `Modifier.animateItem()`. Penginputan form dapat digulir dan tidak tertutup keyboard berkat `imePadding()`. Jika input belum valid saat menekan *Pesan Sekarang*, daftar otomatis bergulir halus ke bidang form bermasalah.
+
+> **Catatan Teknis: OutlinedTextField Form, Validasi, dan Navigasi Fokus**
+>
+> Penginputan data pemesan menggunakan `OutlinedTextField` yang dikombinasikan dengan fungsi validasi murni [Validation.kt](app/src/main/java/com/example/web_app_ondemande/util/Validation.kt). Pesan kesalahan dikontrol melalui parameter `isError` dan `supportingText`.
+>
+> Perpindahan fokus antarkolom input diatur menggunakan `KeyboardOptions` dan `KeyboardActions` yang dipadukan dengan `LocalFocusManager.current.moveFocus(FocusDirection.Down)`. Kolom alamat pengantaran dibungkus dengan `AnimatedVisibility` sehingga hanya muncul secara dinamis jika opsi *Antar* dipilih.
+>
+> ```kotlin
+> OutlinedTextField(
+>     value = name,
+>     onValueChange = onNameChange,
+>     label = { Text("Nama Lengkap") },
+>     isError = nameError != null,
+>     supportingText = nameError?.let { { Text(it) } },
+>     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+>     keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
+> )
+> ```
 
 > **Catatan Teknis: Scaffold, WindowInsets, navigationBarsPadding, dan imePadding**
 >
@@ -299,7 +322,7 @@ app/src/main/java/com/example/web_app_ondemande/
 
 > **Catatan Teknis: AlertDialog, Snackbar, dan SnackbarHost**
 >
-> Konfirmasi pesanan pada [CartScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CartScreen.kt) dipicu melalui `AlertDialog` ketika tombol *Pesan Sekarang* diklik. Dialog menampilkan ringkasan pesanan, opsi pengiriman, catatan dapur, dan total pembayaran. Ketika pengguna mengonfirmasi pesanan (`confirmButton`), callback `onConfirmOrder()` dieksekusi untuk mengosongkan keranjang dan bernavigasi ke Home, diiringi pesan singkat melayang yang dipicu melalui `SnackbarHostState.showSnackbar("Pesanan diterima, terima kasih!")`.
+> Konfirmasi pesanan pada [CartScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CartScreen.kt) dipicu melalui `AlertDialog` ketika tombol *Pesan Sekarang* diklik dan seluruh input terverifikasi valid. Dialog menampilkan rincian nama, nomor telepon, opsi pengiriman, alamat (jika antar), catatan dapur, dan total pembayaran. Ketika pengguna mengonfirmasi pesanan (`confirmButton`), callback `onConfirmOrder()` dieksekusi untuk mengosongkan keranjang dan bernavigasi ke Home, diiringi pesan singkat melayang yang dipicu melalui `SnackbarHostState.showSnackbar("Pesanan diterima, terima kasih!")`.
 >
 > ```kotlin
 > if (showConfirmationDialog) {
@@ -320,29 +343,11 @@ app/src/main/java/com/example/web_app_ondemande/
 > }
 > ```
 
-> **Catatan Teknis: animateItem, SingleChoiceSegmentedButtonRow, dan OutlinedTextField**
->
-> Penghapusan item dari daftar pesanan di dalam `LazyColumn` menggunakan `Modifier.animateItem()`. Modifier ini secara otomatis menerapkan animasi *fade* dan pergeseran posisi pada baris lain ketika suatu item dihapus dari peta data.
->
-> Pemilihan opsi pengiriman memanfaatkan komponen Material Design 3 `SingleChoiceSegmentedButtonRow` dan `SegmentedButton`.
->
-> Penginputan catatan dapur menggunakan `OutlinedTextField` yang dipadukan dengan `rememberSaveable` agar teks catatan tidak hilang saat orientasi layar HP berubah.
->
-> ```kotlin
-> LazyColumn {
->     items(items = cartItems, key = { it.id }) { item ->
->         CartItemCard(
->             item = item,
->             quantity = cartState[item.id] ?: 0,
->             modifier = Modifier.animateItem()
->         )
->     }
-> }
-> ```
+Data pemesan (nama, nomor telepon, dan alamat pengantaran) hanya disimpan sementara di dalam memori selama sesi layar Keranjang aktif. Data ini tidak disimpan ke dalam media penyimpanan lokal (seperti SharedPreferences, DataStore, atau Room) dan tidak dikirimkan ke jaringan internet.
 
 ### Modul Utilitas
 
-- **Tanggung Jawab**: Menyediakan fungsi utilitas pembantu [Format.kt](app/src/main/java/com/example/web_app_ondemande/util/Format.kt) untuk pemformatan angka bulat (*Integer*) menjadi format string mata uang Rupiah standar (contoh: `15000` $\rightarrow$ `"Rp 15.000"`).
+- **Tanggung Jawab**: Menyediakan fungsi utilitas pembantu [Format.kt](app/src/main/java/com/example/web_app_ondemande/util/Format.kt) untuk pemformatan angka bulat (*Integer*) menjadi format string mata uang Rupiah standar (contoh: `15000` $\rightarrow$ `"Rp 15.000"`), serta [Validation.kt](app/src/main/java/com/example/web_app_ondemande/util/Validation.kt) untuk pengujian aturan input form.
 
 ## 7. Manajemen State
 
@@ -404,6 +409,7 @@ Tabel berikut merinci palet warna yang didefinisikan dalam [Color.kt](app/src/ma
 | `OndeMandeCardImageBg` | `#CFC8B8` | Latar belakang tempat foto masakan |
 | `OndeMandeSurface` | `#FFFFFF` | Warna latar belakang kartu putih (`surface`) |
 | `OndeMandeDarkBtn` | `#3A3A3A` | Latar belakang tombol lingkaran aksen |
+| `OndeMandeError` | `#C62828` | Warna merah bata hangat untuk status error validasi (`error`) |
 
 ### Tipografi
 

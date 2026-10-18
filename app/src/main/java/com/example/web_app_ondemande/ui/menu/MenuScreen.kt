@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -43,7 +44,7 @@ import com.example.web_app_ondemande.ui.theme.OndeMandeTheme
  * Fitur Compose:
  * - Scaffold untuk mengelola struktur halaman dan penempatan CartBar di bottomBar.
  * - LazyColumn + items(key = { it.id }) untuk merender daftar makanan secara efisien.
- * - BadgedBox & Badge pada header top bar untuk memperlihatkan jumlah item keranjang secara langsung.
+ * - BadgedBox & Badge pada header top bar dengan offset presisi di pojok kanan atas ikon keranjang.
  * - derivedStateOf untuk menghitung total item dan total harga keranjang secara reaktif.
  *
  * Bagian Tampilan:
@@ -133,7 +134,8 @@ fun MenuScreen(
                             if (totalItems > 0) {
                                 Badge(
                                     containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.offset(x = 6.dp, y = (-4).dp)
                                 ) {
                                     Text(
                                         text = totalItems.toString(),
@@ -175,7 +177,7 @@ fun MenuScreen(
             // Daftar Katalog Makanan (LazyColumn)
             LazyColumn(
                 modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 100.dp),
+                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 120.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 items(
