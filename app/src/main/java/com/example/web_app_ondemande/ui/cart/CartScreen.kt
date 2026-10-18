@@ -242,7 +242,7 @@ fun CartScreen(
                                 textAlign = TextAlign.Center
                             )
                             Text(
-                                text = "Siap Disantap",
+                                text = "Siap Disantok",
                                 style = MaterialTheme.typography.headlineMedium,
                                 textAlign = TextAlign.Center
                             )

@@ -54,7 +54,7 @@ fun EmptyCartState(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Keranjangmu Masih Kosong",
+            text = "Keranjang diak belum baisi",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
