@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -28,6 +29,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.web_app_ondemande.data.MenuData
+import com.example.web_app_ondemande.ui.adaptive.SingleColumnMaxWidth
 import com.example.web_app_ondemande.ui.theme.OndeMandeInk
 import com.example.web_app_ondemande.ui.theme.OndeMandeTheme
 
@@ -60,10 +62,13 @@ fun CartBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            contentAlignment = Alignment.Center      // di layar lebar bar tetap di tengah
         ) {
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .widthIn(max = SingleColumnMaxWidth)  // dan tidak melebar penuh
+                    .fillMaxWidth(),
                 shape = RoundedCornerShape(999.dp),
                 colors = CardDefaults.cardColors(containerColor = OndeMandeInk),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)

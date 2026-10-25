@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,11 +16,14 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -55,23 +59,27 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.web_app_ondemande.data.MenuData
+import com.example.web_app_ondemande.ui.adaptive.ContentMaxWidth
+import com.example.web_app_ondemande.ui.adaptive.SingleColumnMaxWidth
+import com.example.web_app_ondemande.ui.adaptive.WindowWidthClass
+import com.example.web_app_ondemande.ui.adaptive.currentWidthClass
 import com.example.web_app_ondemande.ui.theme.OndeMandeTheme
 import com.example.web_app_ondemande.util.Validation
 import com.example.web_app_ondemande.util.formatRupiah
 import kotlinx.coroutines.launch
 
 /**
- * Halaman Utama Ringkasan Keranjang / Checkout Onde Mande.
+ * Halaman Ringkasan Keranjang / Checkout Onde Mande (ADAPTIF + RESPONSIF).
  *
- * Fitur Compose:
- * - Scaffold dengan bottomBar & SnackbarHost untuk konfirmasi pesanan.
- * - SingleChoiceSegmentedButtonRow (Material 3) untuk opsi pengambilan ("Ambil di tempat" & "Antar").
- * - CustomerFormSection untuk pengisian Data Pemesan (Nama, Telepon, Alamat bersyarat) dengan validasi murni.
- * - LazyColumn dengan rememberLazyListState & animateScrollToItem untuk pengguliran otomatis ke field bermasalah.
- * - OutlinedTextField dengan rememberSaveable & imePadding agar input tidak tertutup keyboard HP.
+ * Tata letak berubah sesuai lebar layar (currentWidthClass):
+ * - Compact / Medium : satu kolom (daftar item -> opsi -> form -> catatan -> ringkasan),
+ *                      lebarnya dibatasi SingleColumnMaxWidth dan diletakkan di tengah.
+ * - Expanded (tablet lebar): DUA PANEL berdampingan.
+ *     Kiri  = daftar item pesanan (LazyColumn sendiri).
+ *     Kanan = opsi pengambilan, data pemesan, catatan dapur, ringkasan (scroll sendiri).
  *
- * Bagian Tampilan:
- * - Menampilkan item pesanan, opsi pengiriman, form data pemesan, catatan dapur, ringkasan pembayaran, dan konfirmasi checkout.
+ * State (jumlah porsi, isi form) tetap di sini, jadi tidak hilang ketika layar diputar
+ * dan tampilan berpindah antara satu kolom <-> dua panel.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,10 +91,14 @@ fun CartScreen(
     onBackToMenu: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val widthClass = currentWidthClass()
+    val isTwoPane = widthClass == WindowWidthClass.Expanded
+
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
     val lazyListState = rememberLazyListState()
+    val rightPaneScrollState = rememberScrollState()
 
     var showConfirmationDialog by remember { mutableStateOf(false) }
     var selectedDeliveryOption by rememberSaveable { mutableIntStateOf(0) } // 0: Ambil di tempat, 1: Antar
@@ -138,7 +150,8 @@ fun CartScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .navigationBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 12.dp)
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                    contentAlignment = Alignment.Center
                 ) {
                     Button(
                         onClick = {
@@ -146,7 +159,12 @@ fun CartScreen(
                                 submitAttempted = true
                                 // Gulir ke bagian form pemesan jika ada error
                                 coroutineScope.launch {
-                                    lazyListState.animateScrollToItem(index = 3)
+                                    if (isTwoPane) {
+                                        rightPaneScrollState.animateScrollTo(0)
+                                    } else {
+                                        // urutan: judul(0), item pesanan, opsi pengambilan, form
+                                        lazyListState.animateScrollToItem(index = cartItems.size + 2)
+                                    }
                                 }
                             } else {
                                 focusManager.clearFocus()
@@ -154,6 +172,7 @@ fun CartScreen(
                             }
                         },
                         modifier = Modifier
+                            .widthIn(max = SingleColumnMaxWidth)
                             .fillMaxWidth()
                             .height(54.dp),
                         shape = RoundedCornerShape(999.dp),
@@ -174,190 +193,196 @@ fun CartScreen(
             }
         }
     ) { innerPadding ->
-        Column(
+        // Konten diletakkan di tengah dan dibatasi lebarnya
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .imePadding()
+                .imePadding(),
+            contentAlignment = Alignment.TopCenter
         ) {
-            // Header Top Bar
-            Row(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .widthIn(max = if (isTwoPane) ContentMaxWidth else SingleColumnMaxWidth)
+                    .fillMaxSize()
             ) {
-                // Tombol Kembali Bulat Putih
-                Box(
+                // Header Top Bar
+                Row(
                     modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(Color.White)
-                        .clickable { onBackToMenu() },
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    // Tombol Kembali Bulat Putih
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(Color.White)
+                            .clickable { onBackToMenu() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "‹",
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(bottom = 2.dp)
+                        )
+                    }
+
                     Text(
-                        text = "‹",
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(bottom = 2.dp)
+                        text = "Onde Mande",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
                     )
+
+                    // Penyeimbang layout
+                    Box(modifier = Modifier.size(40.dp))
                 }
 
-                Text(
-                    text = "Onde Mande",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-
-                // Penyeimbang layout
-                Box(modifier = Modifier.size(40.dp))
-            }
-
-            if (cartItems.isEmpty()) {
-                // Tampilan Keranjang Kosong
-                EmptyCartState(onNavigateToMenu = onBackToMenu)
-            } else {
-                // Tampilan Keranjang Berisi Item
-                LazyColumn(
-                    state = lazyListState,
-                    modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // Judul Halaman Serif
-                    item(key = "header_title") {
-                        Column(
+                if (cartItems.isEmpty()) {
+                    // Tampilan Keranjang Kosong
+                    EmptyCartState(onNavigateToMenu = onBackToMenu)
+                } else if (isTwoPane) {
+                    // ===== TABLET LEBAR: DUA PANEL =====
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        // Panel kiri: judul + daftar item pesanan
+                        LazyColumn(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Text(
-                                text = "Pesananmu,",
-                                style = MaterialTheme.typography.headlineLarge,
-                                textAlign = TextAlign.Center
-                            )
-                            Text(
-                                text = "Siap Disantok",
-                                style = MaterialTheme.typography.headlineMedium,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
+                            item(key = "header_title") { CartTitle() }
 
-                    // Daftar Item Pesanan dengan Animasi Hapus Mulus
-                    items(
-                        items = cartItems,
-                        key = { it.id }
-                    ) { item ->
-                        val qty = cartState[item.id] ?: 0
-                        CartItemCard(
-                            item = item,
-                            quantity = qty,
-                            onIncrease = { onIncrease(item.id) },
-                            onDecrease = { onDecrease(item.id) },
-                            modifier = Modifier.animateItem()
-                        )
-                    }
-
-                    // Opsi Pengambilan (Segmented Button Row Material 3)
-                    item(key = "delivery_options") {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = "Opsi Pengambilan",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            SingleChoiceSegmentedButtonRow(
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                deliveryOptions.forEachIndexed { index, label ->
-                                    SegmentedButton(
-                                        selected = selectedDeliveryOption == index,
-                                        onClick = { selectedDeliveryOption = index },
-                                        shape = SegmentedButtonDefaults.itemShape(
-                                            index = index,
-                                            count = deliveryOptions.size
-                                        ),
-                                        colors = SegmentedButtonDefaults.colors(
-                                            activeContainerColor = MaterialTheme.colorScheme.primary,
-                                            activeContentColor = MaterialTheme.colorScheme.onPrimary,
-                                            inactiveContainerColor = Color.White,
-                                            inactiveContentColor = MaterialTheme.colorScheme.onSurface
-                                        )
-                                    ) {
-                                        Text(text = label, fontWeight = FontWeight.SemiBold)
-                                    }
-                                }
+                            items(
+                                items = cartItems,
+                                key = { it.id }
+                            ) { item ->
+                                val qty = cartState[item.id] ?: 0
+                                CartItemCard(
+                                    item = item,
+                                    quantity = qty,
+                                    onIncrease = { onIncrease(item.id) },
+                                    onDecrease = { onDecrease(item.id) },
+                                    modifier = Modifier.animateItem()
+                                )
                             }
                         }
-                    }
 
-                    // Form Data Pemesan (Nama, Telepon, Alamat bersyarat)
-                    item(key = "customer_form") {
-                        CustomerFormSection(
-                            name = name,
-                            onNameChange = { name = it },
-                            nameError = nameError,
-                            phone = phone,
-                            onPhoneChange = { phone = it },
-                            phoneError = phoneError,
-                            address = address,
-                            onAddressChange = { address = it },
-                            addressError = addressError,
-                            isDelivery = isDelivery,
-                            focusManager = focusManager
-                        )
-                    }
-
-                    // Input Catatan untuk Dapur
-                    item(key = "kitchen_notes") {
+                        // Panel kanan: opsi, form, catatan, ringkasan (scroll sendiri)
                         Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .verticalScroll(rightPaneScrollState)
+                                .padding(top = 8.dp, bottom = 24.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Text(
-                                text = "Catatan untuk Dapur",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
+                            DeliveryOptionSection(
+                                options = deliveryOptions,
+                                selectedIndex = selectedDeliveryOption,
+                                onSelect = { selectedDeliveryOption = it }
                             )
-                            OutlinedTextField(
+                            CustomerFormSection(
+                                name = name,
+                                onNameChange = { name = it },
+                                nameError = nameError,
+                                phone = phone,
+                                onPhoneChange = { phone = it },
+                                phoneError = phoneError,
+                                address = address,
+                                onAddressChange = { address = it },
+                                addressError = addressError,
+                                isDelivery = isDelivery,
+                                focusManager = focusManager
+                            )
+                            KitchenNotesSection(
                                 value = kitchenNotes,
-                                onValueChange = { kitchenNotes = it },
-                                placeholder = {
-                                    Text(
-                                        text = "Contoh: sambal dipisah, rendang tanpa kuah",
-                                        color = MaterialTheme.colorScheme.secondary
-                                    )
-                                },
-                                minLines = 2,
-                                maxLines = 4,
-                                shape = RoundedCornerShape(16.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedContainerColor = Color.White,
-                                    unfocusedContainerColor = Color.White,
-                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                ),
-                                modifier = Modifier.fillMaxWidth()
+                                onValueChange = { kitchenNotes = it }
+                            )
+                            OrderSummaryCard(
+                                totalItems = totalItems,
+                                totalPrice = totalPrice
                             )
                         }
                     }
+                } else {
+                    // ===== HP & TABLET KECIL: SATU KOLOM =====
+                    LazyColumn(
+                        state = lazyListState,
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Judul Halaman Serif
+                        item(key = "header_title") { CartTitle() }
 
-                    // Kartu Ringkasan Total Pembayaran
-                    item(key = "order_summary") {
-                        OrderSummaryCard(
-                            totalItems = totalItems,
-                            totalPrice = totalPrice
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        // Daftar Item Pesanan dengan Animasi Hapus Mulus
+                        items(
+                            items = cartItems,
+                            key = { it.id }
+                        ) { item ->
+                            val qty = cartState[item.id] ?: 0
+                            CartItemCard(
+                                item = item,
+                                quantity = qty,
+                                onIncrease = { onIncrease(item.id) },
+                                onDecrease = { onDecrease(item.id) },
+                                modifier = Modifier.animateItem()
+                            )
+                        }
+
+                        // Opsi Pengambilan (Segmented Button Row Material 3)
+                        item(key = "delivery_options") {
+                            DeliveryOptionSection(
+                                options = deliveryOptions,
+                                selectedIndex = selectedDeliveryOption,
+                                onSelect = { selectedDeliveryOption = it }
+                            )
+                        }
+
+                        // Form Data Pemesan (Nama, Telepon, Alamat bersyarat)
+                        item(key = "customer_form") {
+                            CustomerFormSection(
+                                name = name,
+                                onNameChange = { name = it },
+                                nameError = nameError,
+                                phone = phone,
+                                onPhoneChange = { phone = it },
+                                phoneError = phoneError,
+                                address = address,
+                                onAddressChange = { address = it },
+                                addressError = addressError,
+                                isDelivery = isDelivery,
+                                focusManager = focusManager
+                            )
+                        }
+
+                        // Input Catatan untuk Dapur
+                        item(key = "kitchen_notes") {
+                            KitchenNotesSection(
+                                value = kitchenNotes,
+                                onValueChange = { kitchenNotes = it }
+                            )
+                        }
+
+                        // Kartu Ringkasan Total Pembayaran
+                        item(key = "order_summary") {
+                            OrderSummaryCard(
+                                totalItems = totalItems,
+                                totalPrice = totalPrice
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
                     }
                 }
             }
@@ -461,9 +486,142 @@ fun CartScreen(
     }
 }
 
-@Preview(showBackground = true)
+/** Judul halaman keranjang (dua baris, rata tengah). */
+@Composable
+private fun CartTitle(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = "Pesananmu,",
+            style = MaterialTheme.typography.headlineLarge,
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = "Siap Disantok",
+            style = MaterialTheme.typography.headlineMedium,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+/** Opsi Pengambilan (Ambil di tempat / Antar) memakai Segmented Button Material 3. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DeliveryOptionSection(
+    options: List<String>,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = "Opsi Pengambilan",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        SingleChoiceSegmentedButtonRow(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            options.forEachIndexed { index, label ->
+                SegmentedButton(
+                    selected = selectedIndex == index,
+                    onClick = { onSelect(index) },
+                    shape = SegmentedButtonDefaults.itemShape(
+                        index = index,
+                        count = options.size
+                    ),
+                    colors = SegmentedButtonDefaults.colors(
+                        activeContainerColor = MaterialTheme.colorScheme.primary,
+                        activeContentColor = MaterialTheme.colorScheme.onPrimary,
+                        inactiveContainerColor = Color.White,
+                        inactiveContentColor = MaterialTheme.colorScheme.onSurface
+                    )
+                ) {
+                    Text(text = label, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+    }
+}
+
+/** Input Catatan untuk Dapur. */
+@Composable
+private fun KitchenNotesSection(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = "Catatan untuk Dapur",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = {
+                Text(
+                    text = "Contoh: sambal dipisah, rendang tanpa kuah",
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            },
+            minLines = 2,
+            maxLines = 4,
+            shape = RoundedCornerShape(16.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+            ),
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+@Preview(name = "HP", showBackground = true)
 @Composable
 fun CartScreenPreviewWithItems() {
+    OndeMandeTheme {
+        CartScreen(
+            cartState = mapOf(1 to 2, 3 to 1),
+            onIncrease = {},
+            onDecrease = {},
+            onConfirmOrder = {},
+            onBackToMenu = {}
+        )
+    }
+}
+
+@Preview(name = "Tablet Portrait", showBackground = true, widthDp = 700, heightDp = 1000)
+@Composable
+fun CartScreenTabletPortraitPreview() {
+    OndeMandeTheme {
+        CartScreen(
+            cartState = mapOf(1 to 2, 3 to 1),
+            onIncrease = {},
+            onDecrease = {},
+            onConfirmOrder = {},
+            onBackToMenu = {}
+        )
+    }
+}
+
+@Preview(name = "Tablet Landscape (2 panel)", showBackground = true, widthDp = 1024, heightDp = 700)
+@Composable
+fun CartScreenTabletPreview() {
     OndeMandeTheme {
         CartScreen(
             cartState = mapOf(1 to 2, 3 to 1),

@@ -79,6 +79,8 @@ private const val SHADOW_ALPHA = 0.12f  // gelap-terang (0.05 = sangat tipis, 0.
 fun FoodCarousel(
     items: List<MenuItem>,
     onItemClick: (MenuItem) -> Unit,
+    cardScale: Float = 1f,          // 1f = ukuran HP, >1f = lebih besar untuk tablet
+    maxTiltDegrees: Float = TILT_DEGREES * 3f, // batas miring kartu paling pinggir (makin kecil = pinggir makin tegak)
     modifier: Modifier = Modifier
 ) {
     // Paint bayangan dibuat sekali saja (tidak dibuat ulang tiap frame)
@@ -94,6 +96,12 @@ fun FoodCarousel(
     }
 
     if (items.isEmpty()) return
+
+    // Ukuran kartu mengikuti cardScale (HP = 1f, tablet = lebih besar)
+    val cardWidth = CARD_WIDTH * cardScale
+    val cardHeight = CARD_HEIGHT * cardScale
+    val cardStep = CARD_STEP * cardScale
+    val cardRadius = CARD_RADIUS * cardScale
 
     val count = items.size
     val startPage = (Int.MAX_VALUE / 2) - ((Int.MAX_VALUE / 2) % count)
@@ -117,14 +125,14 @@ fun FoodCarousel(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .height(CARD_HEIGHT + 90.dp),   // ruang ekstra supaya bayangan tidak terpotong
+            .height(cardHeight + 90.dp * cardScale),   // ruang ekstra supaya bayangan tidak terpotong
         contentAlignment = Alignment.Center
     ) {
-        val sidePadding = (maxWidth - CARD_STEP) / 2
+        val sidePadding = (maxWidth - cardStep) / 2
 
         HorizontalPager(
             state = pagerState,
-            pageSize = PageSize.Fixed(CARD_STEP),
+            pageSize = PageSize.Fixed(cardStep),
             contentPadding = PaddingValues(horizontal = sidePadding),
             pageSpacing = 0.dp,
             beyondViewportPageCount = 3,
@@ -146,7 +154,7 @@ fun FoodCarousel(
             ) {
                 Box(
                     modifier = Modifier
-                        .requiredSize(CARD_WIDTH, CARD_HEIGHT)
+                        .requiredSize(cardWidth, cardHeight)
                         .graphicsLayer {
                             val d = offsetOf()
                             val a = d.absoluteValue.coerceAtMost(3f)
@@ -156,16 +164,17 @@ fun FoodCarousel(
                             val s = ((1f - a * SCALE_DROP) * factor).coerceAtLeast(0.3f)
                             scaleX = s
                             scaleY = s
-                            translationX = d * CARD_STEP.toPx() * (factor - 1f)
+                            translationX = d * cardStep.toPx() * (factor - 1f)
 
-                            // Jika kartu samping terlihat miring ke arah sebaliknya (sisi luar harusnya
-                            // lebih dekat ke kamu), ganti jadi: -d.coerceIn(-3f, 3f) * TILT_DEGREES
-                            rotationY = d.coerceIn(-3f, 3f) * TILT_DEGREES
-                            cameraDistance = 6f * density.density
+                            // Kartu pinggir dibatasi miringnya (maxTiltDegrees) supaya tidak terlalu pipih.
+                            // Jika arah miringnya terbalik di HP kamu, tambah tanda minus sebelum (d.coerceIn ...)
+                            rotationY = (d.coerceIn(-3f, 3f) * TILT_DEGREES)
+                                .coerceIn(-maxTiltDegrees, maxTiltDegrees)
+                            cameraDistance = 6f * cardScale * density.density
                         }
                         // bayangan lembut (satu bentuk di-blur, ikut berputar bersama kartu)
                         .drawBehind {
-                            val r = CARD_RADIUS.toPx()
+                            val r = cardRadius.toPx()
                             val dy = SHADOW_OFFSET_Y.toPx()
                             drawIntoCanvas { canvas ->
                                 canvas.nativeCanvas.drawRoundRect(
@@ -173,7 +182,7 @@ fun FoodCarousel(
                                 )
                             }
                         }
-                        .clip(RoundedCornerShape(CARD_RADIUS))
+                        .clip(RoundedCornerShape(cardRadius))
                         .background(OndeMandeCardImageBg)
                         // efek pudar: lapisan krem tipis di atas foto (lebih ringan dari alpha)
                         .drawWithContent {
