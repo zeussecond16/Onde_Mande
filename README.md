@@ -6,9 +6,9 @@ Onde Mande adalah aplikasi pemesanan masakan Minang berbasis Android yang diranc
 
 ## 2. Fitur
 
-- **Halaman Utama (Home)**: Menampilkan spanduk hero dengan tipografi Serif khas Minang, tombol navigasi pemesanan, carousel foto makanan 3D bergulir otomatis (diatur via `LaunchedEffect`), serta kartu informasi keunggulan restoran.
-- **Halaman Katalog (Menu)**: Menyajikan daftar 10 masakan Minang lengkap dengan foto, nama, harga, stepper porsi interaktif, ikon indikator badge pada header, serta bar keranjang melayang (*floating cart bar*) yang muncul otomatis saat terdapat item yang dipilih.
-- **Halaman Keranjang (Cart/Checkout)**: Menampilkan rincian daftar pesanan dengan animasi penghapusan item, pemilih opsi pengiriman (*Ambil di tempat* atau *Antar*), form data pemesan (Nama, Nomor Telepon, Alamat bersyarat) dengan validasi format Indonesia, kolom catatan khusus dapur, ringkasan kalkulasi total pembayaran, serta dialog konfirmasi pesanan.
+- **Halaman Utama (Home)**: Menampilkan spanduk hero dengan tipografi Serif khas Minang, tombol navigasi pemesanan, carousel foto makanan 3D bergulir otomatis (diatur via `LaunchedEffect`), kartu informasi keunggulan restoran, serta tata letak responsif yang menyesuaikan secara otomatis dari 1 kolom di smartphone hingga 2 kolom berdampingan pada layar sedang dan lebar (tablet/landscape).
+- **Halaman Katalog (Menu)**: Menyajikan daftar 10 masakan Minang lengkap dengan foto, nama, harga, stepper porsi interaktif, ikon indikator badge pada header, bar keranjang melayang (*floating cart bar*) yang muncul otomatis saat terdapat item yang dipilih, serta adaptasi tata letak dari daftar tunggal menjadi *grid* 2 kolom pada layar sedang dan lebar.
+- **Halaman Keranjang (Cart/Checkout)**: Menampilkan rincian daftar pesanan dengan animasi penghapusan item, pemilih opsi pengiriman (*Ambil di tempat* atau *Antar*), form data pemesan (Nama, Nomor Telepon, Alamat bersyarat) dengan validasi format Indonesia, kolom catatan khusus dapur, ringkasan kalkulasi total pembayaran, dialog konfirmasi pesanan, serta adaptasi *two-pane split layout* pada layar sedang dan lebar.
 
 ## 3. Teknologi
 
@@ -34,7 +34,8 @@ Aplikasi Onde Mande menerapkan pola arsitektur *Unidirectional Data Flow* (UDF) 
 - **Entry Point**: [MainActivity.kt](app/src/main/java/com/example/web_app_ondemande/MainActivity.kt) sebagai peluncur tunggal yang mengonfigurasi *edge-to-edge layout* dan memuat tema aplikasi.
 - **Navigasi**: [AppNavHost.kt](app/src/main/java/com/example/web_app_ondemande/navigation/AppNavHost.kt) mengelola deklarasi rute halaman (`Home`, `Menu`, `Cart`) dan siklus navigasi.
 - **State Layer**: Pemilik tunggal kebenaran state keranjang (*Single Source of Truth*) dipertahankan di tingkat teratas navigasi menggunakan `rememberSaveable`.
-- **Layar (Screen)**: [HomeScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/home/HomeScreen.kt), [MenuScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/MenuScreen.kt), dan [CartScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CartScreen.kt) bertindak sebagai kontainer tingkat halaman yang merangkai komponen-komponen UI.
+- **Modul Adaptif**: [Windowsize.kt](app/src/main/java/com/example/web_app_ondemande/ui/adaptive/Windowsize.kt) membaca kelas lebar jendela (`WindowWidthClass`) melalui `LocalConfiguration` untuk menentukan tata letak yang sesuai secara reaktif.
+- **Layar (Screen)**: [HomeScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/home/HomeScreen.kt), [MenuScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/MenuScreen.kt), dan [CartScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CartScreen.kt) bertindak sebagai kontainer tingkat halaman yang merangkai komponen-komponen UI secara responsif.
 - **Komponen UI Stateless**: Komponen atomik seperti [QuantityStepper.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/QuantityStepper.kt), [MenuItemCard.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/MenuItemCard.kt), [CartItemCard.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CartItemCard.kt), [CustomerFormSection.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CustomerFormSection.kt), dan [OrderSummaryCard.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/OrderSummaryCard.kt) yang murni menerima data dan memicu callback event.
 - **Data Layer**: [MenuItem.kt](app/src/main/java/com/example/web_app_ondemande/data/MenuItem.kt) dan [MenuData.kt](app/src/main/java/com/example/web_app_ondemande/data/MenuData.kt) menyediakan struktur data dan sumber katalog statis.
 - **Tema**: [Theme.kt](app/src/main/java/com/example/web_app_ondemande/ui/theme/Theme.kt), [Color.kt](app/src/main/java/com/example/web_app_ondemande/ui/theme/Color.kt), dan [Type.kt](app/src/main/java/com/example/web_app_ondemande/ui/theme/Type.kt) mendefinisikan warna, tipografi, dan gaya visual Material 3 secara terpusat.
@@ -81,6 +82,8 @@ app/src/main/java/com/example/web_app_ondemande/
 ├── navigation/
 │   └── AppNavHost.kt                    # Deklarasi rute NavHost dan pengelola state terpusat
 ├── ui/
+│   ├── adaptive/
+│   │   └── Windowsize.kt                # Pembaca kelas lebar jendela (Compact, Medium, Expanded)
 │   ├── cart/
 │   │   ├── CartItemCard.kt              # Komponen baris kartu pesanan di keranjang
 │   │   ├── CartScreen.kt                # Layar checkout, opsi pengiriman, dan konfirmasi pesanan
@@ -105,6 +108,31 @@ app/src/main/java/com/example/web_app_ondemande/
 ```
 
 ## 6. Penjelasan Modul
+
+### Modul Adaptif
+
+- **Tanggung Jawab**: Membaca ukuran lebar layar perangkat dan menyediakan klasifikasi `WindowWidthClass` (`Compact`, `Medium`, `Expanded`) serta batasan lebar maksimum (`ContentMaxWidth` = `1100.dp` & `SingleColumnMaxWidth` = `640.dp`).
+- **Komposisi**: [Windowsize.kt](app/src/main/java/com/example/web_app_ondemande/ui/adaptive/Windowsize.kt) menyediakan fungsi composable `currentWidthClass()`.
+- **State**: Reaktif terhadap perubahan konfigurasi layar (`LocalConfiguration.current.screenWidthDp`).
+- **Efek Tampilan**: Menentukan apakah layar merender tata letak 1 kolom (HP) atau multi-kolom/split-pane (Tablet/Landscape).
+
+> **Catatan Teknis: currentWidthClass, WindowWidthClass, dan ContentMaxWidth**
+>
+> Penyesuaian tata letak terhadap berbagai ukuran layar dilakukan dengan membaca lebar layar saat ini via `LocalConfiguration.current.screenWidthDp`. Fungsi `currentWidthClass()` mengembalikan enum `WindowWidthClass` (`Compact` untuk <600dp, `Medium` untuk 600-839dp, dan `Expanded` untuk ≥840dp). Nilai ini dikonsumsi oleh `HomeScreen`, `MenuScreen`, dan `CartScreen` untuk beralih secara deklaratif antara tata letak satu kolom dan multi-kolom/split-pane, sementara `ContentMaxWidth` (`1100.dp`) membatasi lebar maksimum konten agar tidak membentang berlebihan pada layar besar.
+>
+> ```kotlin
+> enum class WindowWidthClass { Compact, Medium, Expanded }
+>
+> @Composable
+> fun currentWidthClass(): WindowWidthClass {
+>     val widthDp = LocalConfiguration.current.screenWidthDp
+>     return when {
+>         widthDp < 600 -> WindowWidthClass.Compact
+>         widthDp < 840 -> WindowWidthClass.Medium
+>         else -> WindowWidthClass.Expanded
+>     }
+> }
+> ```
 
 ### Modul Tema
 
@@ -164,7 +192,7 @@ app/src/main/java/com/example/web_app_ondemande/
 ### Modul Home
 
 - **Tanggung Jawab**: Menampilkan spanduk *landing page* dan carousel galeri 3D makanan unggulan.
-- **Komposisi**: [HomeScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/home/HomeScreen.kt) memuat struktur `Scaffold`, header navbar, spanduk hero, tombol CTA, [FoodCarousel.kt](app/src/main/java/com/example/web_app_ondemande/ui/home/FoodCarousel.kt), dan daftar artikel keunggulan.
+- **Komposisi**: [HomeScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/home/HomeScreen.kt) memuat struktur `Scaffold`, header navbar, spanduk hero, tombol CTA, [FoodCarousel.kt](app/src/main/java/com/example/web_app_ondemande/ui/home/FoodCarousel.kt), dan daftar artikel keunggulan. Pada layar sedang dan lebar (`Medium`/`Expanded`), konten hero dan carousel otomatis tersusun secara 2 kolom berdampingan.
 - **State**: `pagerState` dalam `FoodCarousel` yang diatur melalui `rememberPagerState`.
 - **Efek Tampilan**: Galeri foto yang bergulir otomatis setiap 2.8 detik dengan efek rotasi perspektif 3D yang halus. Mekanisme auto-scroll diimplementasikan menggunakan `LaunchedEffect(pagerState)` dengan perulangan coroutine `delay(2800)` dan `pagerState.animateScrollToPage()`.
 
@@ -205,13 +233,13 @@ app/src/main/java/com/example/web_app_ondemande/
 ### Modul Menu
 
 - **Tanggung Jawab**: Menampilkan daftar katalog hidangan masakan Minang beserta pengatur kuantitas porsi dan indikator keranjang.
-- **Komposisi**: [MenuScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/MenuScreen.kt) merangkai `Scaffold`, header top bar dengan `BadgedBox` & `Badge`, `LazyColumn` yang berisi [MenuItemCard.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/MenuItemCard.kt), [QuantityStepper.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/QuantityStepper.kt), serta [CartBar.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/CartBar.kt).
+- **Komposisi**: [MenuScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/MenuScreen.kt) merangkai `Scaffold`, header top bar dengan `BadgedBox` & `Badge`, `LazyColumn` atau `LazyVerticalGrid` (pada layar `Medium`/`Expanded`) yang berisi [MenuItemCard.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/MenuItemCard.kt), [QuantityStepper.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/QuantityStepper.kt), serta [CartBar.kt](app/src/main/java/com/example/web_app_ondemande/ui/menu/CartBar.kt).
 - **State**: Menerima `cartState` dari modul navigasi. Total item dan total harga dihitung menggunakan `derivedStateOf`.
-- **Efek Tampilan**: Daftar makanan bergulir cepat dengan bar keranjang melayang yang muncul secara otomatis (*slide-in*) saat keranjang berisi item.
+- **Efek Tampilan**: Daftar makanan bergulir cepat (berupa daftar 1 kolom di HP atau grid 2 kolom di tablet) dengan bar keranjang melayang yang muncul secara otomatis (*slide-in*) saat keranjang berisi item.
 
-> **Catatan Teknis: LazyColumn dengan Key, derivedStateOf, dan AnimatedVisibility**
+> **Catatan Teknis: LazyColumn / LazyVerticalGrid dengan Key, derivedStateOf, dan AnimatedVisibility**
 >
-> `LazyColumn` digunakan untuk merender daftar item secara efisien. Parameter `key = { it.id }` diberikan pada fungsi `items` untuk memberikan identitas unik pada setiap item sehingga Compose tidak merender ulang elemen yang tidak mengalami perubahan.
+> `LazyColumn` dan `LazyVerticalGrid` digunakan untuk merender daftar item secara efisien. Parameter `key = { it.id }` diberikan pada fungsi `items` untuk memberikan identitas unik pada setiap item sehingga Compose tidak merender ulang elemen yang tidak mengalami perubahan.
 >
 > Perhitungan akumulasi total item dan total harga dibungkus dalam `derivedStateOf` untuk mengoptimalkan recomposition, sehingga kalkulasi matematika hanya dijalankan ketika isi `cartState` mengalami perubahan.
 >
@@ -276,7 +304,7 @@ app/src/main/java/com/example/web_app_ondemande/
 ### Modul Keranjang
 
 - **Tanggung Jawab**: Menampilkan rincian pesanan, pemilih opsi pengiriman, form data pemesan, kolom catatan dapur, kalkulasi total, serta konfirmasi checkout.
-- **Komposisi**: [CartScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CartScreen.kt) merangkai `Scaffold`, `SnackbarHost`, `LazyColumn` yang berisi [CartItemCard.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CartItemCard.kt), `SingleChoiceSegmentedButtonRow`, [CustomerFormSection.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CustomerFormSection.kt), `OutlinedTextField`, [OrderSummaryCard.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/OrderSummaryCard.kt), [EmptyCartState.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/EmptyCartState.kt), dan `AlertDialog`.
+- **Komposisi**: [CartScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CartScreen.kt) merangkai `Scaffold`, `SnackbarHost`, `LazyColumn` yang berisi [CartItemCard.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CartItemCard.kt), `SingleChoiceSegmentedButtonRow`, [CustomerFormSection.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/CustomerFormSection.kt), `OutlinedTextField`, [OrderSummaryCard.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/OrderSummaryCard.kt), [EmptyCartState.kt](app/src/main/java/com/example/web_app_ondemande/ui/cart/EmptyCartState.kt), dan `AlertDialog`. Pada layar `Medium`/`Expanded`, tampilan diatur dalam format *two-pane split layout*.
 - **State**:
   - `selectedDeliveryOption`: `mutableIntStateOf(0)` dibungkus `rememberSaveable` untuk memilih opsi *Ambil di tempat* atau *Antar*.
   - `name`, `phone`, `address`: `mutableStateOf("")` dibungkus `rememberSaveable` untuk menampung input pemesan.
@@ -423,6 +451,7 @@ Tipografi dikonfigurasi dalam [Type.kt](app/src/main/java/com/example/web_app_on
 - **Radius Kartu**: Kartu menu dan kartu pesanan menggunakan sudut melengkung besar `22.dp` hingga `24.dp` dengan latar belakang putih bersih di atas kanvas krem.
 - **Bentuk Pill (999.dp)**: Digunakan pada tombol aksi CTA, bar keranjang melayang, dan tombol konfirmasi checkout.
 - **Prinsip Spasi**: Menggunakan sistem kisi berorientasi kelipatan `4.dp` dan `8.dp` (`8.dp`, `12.dp`, `16.dp`, `20.dp`, `24.dp`) untuk menjaga konsistensi jarak antar-elemen UI.
+- **Tata Letak Adaptif**: Menggunakan batasan lebar konten `ContentMaxWidth` (`1100.dp`) dan `SingleColumnMaxWidth` (`640.dp`) untuk menjaga proporsi visual yang seimbang saat aplikasi dibuka di HP portrait, HP landscape, tablet, atau layar besar.
 
 ## 9. Aset
 
