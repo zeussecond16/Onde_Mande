@@ -3,11 +3,11 @@ package com.example.web_app_ondemande.ui.theme
 import androidx.compose.ui.graphics.Color
 
 /**
- * Palet warna resmi Onde Mande (diambil dari home.css & menu.css).
+ * Palet warna resmi Onde Mande.
  */
-val OndeMandeCream = Color(0xFFFDF8EC)       // Latar belakang utama halaman (--bg)
-val OndeMandeInk = Color(0xFF141414)         // Teks & tombol utama (--ink)
-val OndeMandeMuted = Color(0xFF6B665C)       // Teks sekunder / deskripsi (--muted)
+val OndeMandeCream = Color(0xFFFDF8EC)       // Latar belakang utama halaman
+val OndeMandeInk = Color(0xFF141414)         // Teks & tombol utama
+val OndeMandeMuted = Color(0xFF6B665C)       // Teks sekunder / deskripsi
 val OndeMandeStepperBg = Color(0xFFF3ECDA)   // Latar belakang stepper +/-
 val OndeMandeCardImageBg = Color(0xFFCFC8B8) // Latar gambar placeholder
 val OndeMandeSurface = Color(0xFFFFFFFF)     // Latar kartu / Card

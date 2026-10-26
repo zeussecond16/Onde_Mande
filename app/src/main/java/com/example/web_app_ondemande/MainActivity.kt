@@ -8,7 +8,7 @@ import com.example.web_app_ondemande.navigation.AppNavHost
 import com.example.web_app_ondemande.ui.theme.OndeMandeTheme
 
 /**
- * Activity Utama Aplikasi Onde Mande (100% Jetpack Compose Murni).
+ * Activity Utama Aplikasi Onde Mande.
  */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

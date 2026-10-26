@@ -47,11 +47,11 @@ import com.example.web_app_ondemande.ui.theme.OndeMandeTheme
 import kotlinx.coroutines.delay
 import kotlin.math.absoluteValue
 
-// ====== PENGATURAN KARTU (angka sama dengan versi HTML/CSS awal) ======
+// ====== PENGATURAN KARTU  ======
 private val CARD_WIDTH = 150.dp         // lebar kartu
 private val CARD_HEIGHT = 210.dp        // tinggi kartu
 private val CARD_STEP = 120.dp          // jarak antar kartu
-private val CARD_RADIUS = 20.dp         // lengkung sudut
+private val CARD_RADIUS = 20.dp         // lcoengkung sudut
 private const val TILT_DEGREES = 28f    // sudut putar per kartu
 private const val SCALE_DROP = 0.08f    // kartu mengecil per langkah dari tengah
 private const val FADE_PER_STEP = 0.12f // kartu memudar per langkah dari tengah
@@ -60,18 +60,18 @@ private const val PERSPECTIVE_DP = 900f // kekuatan perspektif 3D
 private const val AUTO_SCROLL_MS = 2800L
 private const val SCROLL_ANIM_MS = 700
 
-// ====== PENGATURAN BAYANGAN (setara CSS: 0 12px 30px rgba(0,0,0,.15)) ======
+// ====== PENGATURAN BAYANGAN ======
 private val SHADOW_BLUR = 30.dp         // seberapa menyebar / lembut
 private val SHADOW_OFFSET_Y = 12.dp     // seberapa turun ke bawah
 private const val SHADOW_ALPHA = 0.12f  // gelap-terang (0.05 = sangat tipis, 0.2 = tegas)
 
 /**
- * Carousel foto bergulir melengkung (desain awal), ringan dan looping tanpa ujung.
+ * Carousel foto bergulir melengkung 3D, ringan dan looping tanpa ujung.
  *
  * - Looping: jumlah halaman Int.MAX_VALUE + foto dipilih dengan `page % items.size`.
  * - Kartu menumpuk: ukuran halaman (CARD_STEP) lebih kecil dari lebar kartu (CARD_WIDTH).
- * - Efek 3D: perspektif dihitung manual (Compose tidak punya translateZ seperti CSS).
- * - Bayangan: satu bentuk yang di-blur (BlurMaskFilter), seperti box-shadow di CSS,
+ * - Efek 3D: perspektif dihitung secara manual melalui kalkulasi offset.
+ * - Bayangan: satu bentuk yang di-blur (BlurMaskFilter) secara melengkung,
  *   jadi tipis dan lembut, bukan tumpukan kotak.
  * - Semua posisi dibaca di dalam graphicsLayer / draw, jadi tidak ada recomposition per frame.
  */
@@ -89,7 +89,7 @@ fun FoodCarousel(
         Paint().apply {
             isAntiAlias = true
             color = Color.Black.copy(alpha = SHADOW_ALPHA).toArgb()
-            // radius BlurMaskFilter ~ 0.85 x blur CSS supaya hasilnya setara
+            // radius BlurMaskFilter dihitung dari nilai blur
             val radiusPx = with(density) { SHADOW_BLUR.toPx() } * 0.85f
             maskFilter = BlurMaskFilter(radiusPx, BlurMaskFilter.Blur.NORMAL)
         }
@@ -159,7 +159,7 @@ fun FoodCarousel(
                             val d = offsetOf()
                             val a = d.absoluteValue.coerceAtMost(3f)
 
-                            // Perspektif ala CSS: makin jauh dari tengah, makin kecil & makin dekat ke tengah
+                            // Perspektif 3D: makin jauh dari tengah, makin kecil & makin dekat ke tengah
                             val factor = PERSPECTIVE_DP / (PERSPECTIVE_DP + a * DEPTH_DP)
                             val s = ((1f - a * SCALE_DROP) * factor).coerceAtLeast(0.3f)
                             scaleX = s
