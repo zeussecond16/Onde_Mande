@@ -1,3 +1,86 @@
+# TUGAS SOAL JAWABAN MAJU PRESENTASI
+
+## Soal 1: Cara Mengganti Gambar yang Ada di FoodCarousel dan Penjelasannya
+
+### Lokasi Kode
+- File: [MenuData.kt](app/src/main/java/com/example/web_app_ondemande/data/MenuData.kt)
+- Variabel: `MenuData.carouselItems` dan `MenuData.items`
+
+### Penjelasan dan Langkah-Langkah Mengganti Gambar
+1. Masukkan file gambar baru berformat WebP (`.webp`) ke dalam folder aset drawable lokal di [app/src/main/res/drawable/](app/src/main/res/drawable/). Gunakan penamaan huruf kecil tanpa spasi (contoh: `naspad_rendang.webp`).
+2. Buka file [MenuData.kt](app/src/main/java/com/example/web_app_ondemande/data/MenuData.kt). Di dalam objek `MenuData`, perbarui rujukan `imageRes` pada entitas `MenuItem` terkait (contoh: `imageRes = R.drawable.naspad_rendang`).
+3. Jika ingin mengganti komposisi masakan yang ditampilkan di carousel Home, ubah daftar indeks item pada variabel `carouselItems = listOf(...)` di [MenuData.kt](app/src/main/java/com/example/web_app_ondemande/data/MenuData.kt).
+4. Komponen `FoodCarousel` membaca daftar `carouselItems` tersebut dan merender gambar secara otomatis melalui pemanggilan composable `Image(painter = painterResource(id = menuItem.imageRes))` di [FoodCarousel.kt](app/src/main/java/com/example/web_app_ondemande/ui/home/FoodCarousel.kt).
+
+---
+
+## Soal 2: Script yang Mengatur Autoplay, Cara Mengubah Arah Autoplay, dan Penjelasannya
+
+### Lokasi Script
+- File: [FoodCarousel.kt](app/src/main/java/com/example/web_app_ondemande/ui/home/FoodCarousel.kt)
+- Kode: Blok `LaunchedEffect(pagerState)` pada baris 111-121.
+
+### Penjelasan Cara Kerja Autoplay
+```kotlin
+LaunchedEffect(pagerState) {
+    while (true) {
+        delay(AUTO_SCROLL_MS)
+        if (!pagerState.isScrollInProgress) {
+            pagerState.animateScrollToPage(
+                page = pagerState.currentPage + 1,
+                animationSpec = tween(durationMillis = SCROLL_ANIM_MS, easing = FastOutSlowInEasing)
+            )
+        }
+    }
+}
+```
+1. `LaunchedEffect(pagerState)` memicu side-effect coroutine yang berjalan secara asynchronous selama komponen `FoodCarousel` berada di dalam hierarki UI.
+2. Perulangan `while (true)` bersama `delay(AUTO_SCROLL_MS)` memberikan jeda waktu pemutaran otomatis selama 2.8 detik (`2800L`).
+3. Pemeriksaan `!pagerState.isScrollInProgress` memastikan auto-scroll tidak mengganggu saat pengguna sedang melakukan swipe gesture secara manual.
+4. `pagerState.animateScrollToPage(page = pagerState.currentPage + 1)` menggeser indeks halaman carousel maju 1 langkah ke depan secara otomatis dengan kurva animasi `FastOutSlowInEasing`.
+
+### Cara Mengubah Arah Autoplay
+- **Arah Mundur (Ke Kiri)**: Ubah ekspresi penambahan indeks dari `pagerState.currentPage + 1` menjadi `pagerState.currentPage - 1`.
+- **Arah Vertikal (Atas-Bawah)**: Pada [FoodCarousel.kt](app/src/main/java/com/example/web_app_ondemande/ui/home/FoodCarousel.kt), ganti composable `HorizontalPager` menjadi `VerticalPager`.
+
+---
+
+## Soal 3: Script Teks di Bawah Halaman Home dan Penjelasan Mengapa Teks Bisa Mengambang
+
+### Lokasi Script Teks
+- File: [HomeScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/home/HomeScreen.kt)
+- Kode: Section `FeatureArticle` pada baris 190-234.
+
+```kotlin
+Column(
+    modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 28.dp, vertical = 16.dp),
+    verticalArrangement = Arrangement.spacedBy(22.dp),
+    horizontalAlignment = Alignment.CenterHorizontally
+) {
+    FeatureArticle(
+        title = "Rampah Asli Minang",
+        description = "Bumbu diracik sendiri dengan resep turun-temurun, tanpa pengawet, supaya rasanya tetap otentik."
+    )
+    FeatureArticle(
+        title = "Panggarah tiok Hari",
+        description = "Rendang, gulai, dan dendeng balado disiapkan setiap pagi, jadi selalu hangat dan baru matang."
+    )
+    FeatureArticle(
+        title = "Layan Antar & Catering",
+        description = "Makan di tempat, bawa pulang, atau pesan untuk acara keluarga dan kantor."
+    )
+}
+```
+
+### Penjelasan Mengapa Teks Bisa Mengambang Saat Digulir
+1. Kontainer utama seluruh halaman pada [HomeScreen.kt](app/src/main/java/com/example/web_app_ondemande/ui/home/HomeScreen.kt) membungkus seluruh elemen UI di dalam `Column` induk yang dipadukan dengan `Modifier.verticalScroll(rememberScrollState())`.
+2. Karena `verticalScroll` diterapkan di tingkat kontainer induk, seluruh komponen di dalamnya (TopBar, Spanduk Hero, FoodCarousel, dan Section Keunggulan) menjadi satu kanvas gulir vertikal yang kontinu.
+3. Ketika pengguna melakukan gestur scroll ke atas, teks keunggulan tampak mengambang dan naik dari bawah layar melewati area viewport karena diposisikan di dalam aliran tata letak vertikal yang dinamis (scrollable viewport).
+
+---
+
 # Onde Mande
 
 ## 1. Judul dan Ringkasan
